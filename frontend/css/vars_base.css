@@ -1,0 +1,36 @@
+:root {
+    --bg-main: #0B0B0E;
+    --bg-panel: #15151A;
+    --bg-card: #1C1C24;
+    --bg-header: #252530;
+    --primary: #3B82F6;
+    --primary-hover: #2563EB;
+    --success: #10B981;
+    --success-hover: #059669;
+    --warning: #F59E0B;
+    --danger: #EF4444;
+    --purple: #A855F7;
+    --cyan: #06b6d4;
+    --text-main: #F3F4F6;
+    --text-muted: #9CA3AF;
+    --border: #2D2D3A;
+}
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+body {
+    font-family: 'Consolas', 'Courier New', monospace;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    height: 100vh;
+    overflow: hidden;
+}
+.app-container {
+    display: flex;
+    height: 100%;
+}
+.hidden {
+    display: none !important;
+}

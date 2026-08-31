@@ -1,0 +1,117 @@
+.btn {
+    padding: 12px 15px;
+    font-size: 14px;
+    font-weight: bold;
+    font-family: inherit;
+    background-color: transparent;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    cursor: pointer; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    animation: none !important;
+    transform: none !important;
+    border-color: var(--border) !important;
+    color: var(--text-muted) !important;
+}
+.btn-primary {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+.btn-primary:hover {
+    background-color: rgba(59, 130, 246, 0.15);
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+    transform: translateY(-2px);
+}
+.btn-success {
+    border-color: var(--success);
+    color: var(--success);
+}
+.btn-success:hover {
+    background-color: rgba(16, 185, 129, 0.15);
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+    transform: translateY(-2px);
+}
+.btn-warning {
+    border-color: var(--warning);
+    color: var(--warning);
+}
+.btn-warning:hover {
+    background-color: rgba(245, 158, 11, 0.15);
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+    transform: translateY(-2px);
+}
+.btn-danger {
+    border-color: var(--danger);
+    color: var(--danger);
+}
+.btn-danger:hover {
+    background-color: rgba(239, 68, 68, 0.15);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+    transform: translateY(-2px);
+}
+.btn-secondary {
+    border-color: var(--border);
+    color: var(--text-muted);
+}
+.btn-secondary:hover {
+    border-color: var(--text-main);
+    color: var(--text-main);
+    background-color: rgba(255, 255, 255, 0.05);
+    transform: translateY(-2px);
+}
+.btn-outline-danger {
+    border-color: var(--danger);
+    color: var(--danger);
+}
+.btn-outline-danger:hover {
+    background-color: rgba(239, 68, 68, 0.15);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+    transform: translateY(-2px);
+}
+.btn-outline-primary {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+.btn-outline-primary:hover {
+    background-color: rgba(59, 130, 246, 0.15);
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+    transform: translateY(-2px);
+}
+.btn-icon {
+    background-color: transparent;
+    border: 2px solid var(--border);
+    padding: 8px 12px;
+    color: var(--text-main);
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.4s ease;
+}
+.btn-icon:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background-color: rgba(59, 130, 246, 0.1);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+
+/* Classi Testi e Colori Aggiuntivi */
+.text-warning {
+    color: var(--warning);
+}
+.text-danger {
+    color: var(--danger);
+}
+.text-success {
+    color: var(--success);
+}
+.text-muted {
+    color: var(--text-muted);
+}
+.text-primary {
+    color: var(--primary);
+}
+.text-cyan {
+    color: var(--cyan);
+}

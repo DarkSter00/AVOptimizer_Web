@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A/V Optimizer v.8 Web</title>
+  <link rel="stylesheet" href="style.css?v=34">
+</head>
+<body>
+<button id="btn-mobile-menu" class="btn-mobile-menu">🍔</button>
+<div id="mobile-overlay" class="mobile-overlay"></div>
+<div class="app-container">
+  <aside class="sidebar">
+    <div class="brand">
+      <h2>⚡ A/V Optimizer</h2>
+      <span class="version">v.8 Web</span>
+    </div>
+    <div class="actions">
+      <button id="btn-add-folder" class="btn btn-primary pulse-primary">📂 Aggiungi Cartella</button>
+      <div style="margin-bottom: 5px; display: flex; align-items: center; gap: 8px;">
+        <input type="checkbox" id="chk-force-rescan" style="cursor: pointer; width: 14px; height: 14px;">
+        <label for="chk-force-rescan" style="font-size: 11px; color: var(--text-muted); cursor: pointer;">Forza Ricontrollo (Ignora Cache)</label>
+      </div>
+      <div class="btn-group">
+        <button id="btn-toggle-play" class="btn btn-secondary" disabled>▶ Avvia</button>
+        <button id="btn-stop" class="btn btn-danger">⏹ Stop Assoluto</button>
+      </div>
+      <button id="btn-settings" class="btn btn-secondary">⚙️ Impostazioni / Log</button>
+      <button id="btn-db-viewer" class="btn btn-outline-primary mt-2">🗄️ Apri Visualizzatore DB</button>
+    </div>
+    <div class="global-metrics">
+      <h4>STATO GLOBALE</h4>
+      <div class="progress-bar-container">
+        <div id="global-progress" class="progress-fill success-fill"></div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-box interactive" onclick="openModal('completed')" style="animation-delay: 0.1s;">
+          <span class="stat-value" id="lbl-files">0/0</span>
+          <span class="stat-label">Completati</span>
+        </div>
+        <div class="stat-box interactive" style="animation-delay: 0.15s;">
+          <span class="stat-value text-primary" id="lbl-saved-space">0 B</span>
+          <span class="stat-label">Spazio Lib.</span>
+        </div>
+        <div class="stat-box interactive" onclick="openModal('skipped')" style="animation-delay: 0.2s;">
+          <span class="stat-value text-cyan" id="lbl-skipped">0</span>
+          <span class="stat-label">Saltati</span>
+        </div>
+        <div class="stat-box interactive" onclick="openModal('errors')" style="animation-delay: 0.3s;">
+          <span class="stat-value text-danger" id="lbl-errors">0</span>
+          <span class="stat-label">Errori</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div id="scanner-widget" class="floating-widget hidden">
+    <div class="widget-progress-bg warning-bg" id="scanner-bg"></div>
+    <div class="widget-content">
+      <div class="widget-header">
+        <div class="widget-spinner warning-spinner"></div>
+        <span class="widget-title text-warning">Scansione Python</span>
+        <span id="scanner-pct-text" class="widget-pct">0%</span>
+      </div>
+      <div class="widget-step" id="scanner-step-text">Mappatura disco...</div>
+      <div class="widget-file" id="scanner-file-text">Attendere...</div>
+    </div>
+  </div>
+  <div id="ui-loading-overlay" class="floating-widget hidden">
+    <div class="widget-progress-bg primary-bg" id="ui-builder-bg"></div>
+    <div class="widget-content">
+      <div class="widget-header">
+        <div class="widget-spinner primary-spinner"></div>
+        <span class="widget-title text-primary">Costruzione Canvas</span>
+        <span id="ui-loading-text" class="widget-pct">0%</span>
+      </div>
+      <div class="widget-step" id="ui-loading-desc">Sincronizzazione DOM...</div>
+      <div class="widget-file">Generazione riquadri visivi in corso</div>
+    </div>
+  </div>
+  <main class="main-content">
+    <header class="top-navbar slide-down" id="top-navbar" style="display: none;">
+      <div class="core-selector" id="core-selector"></div>
+      <div>
+        <button class="btn btn-secondary mr-2" onclick="openModal('graph')">📊 Grafo Struttura</button>
+        <button id="btn-delete-core" class="btn btn-outline-danger">🗑️ Elimina Core</button>
+      </div>
+    </header>
+    <div class="canvas-scroll-wrapper" id="canvas-scroll-wrapper">
+      <div id="canvas-area" class="canvas-area"></div>
+    </div>
+  </main>
+  <div id="data-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modal-title">Dettagli</h3>
+        <button class="btn-icon" onclick="closeModal()">✖</button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- DRAG AND DROP OVERLAY -->
+<div id="dnd-overlay" class="dnd-overlay">
+  <div class="dnd-box">
+    <div class="dnd-icon">📂</div>
+    <div class="dnd-text">Rilascia le cartelle qui per aggiungerle</div>
+  </div>
+</div>
+
+<!-- ARCHITETTURA JS MODULARE -->
+<script src="js/globals.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/api.js"></script>
+<script src="js/animations.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
