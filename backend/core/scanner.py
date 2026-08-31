@@ -80,12 +80,12 @@ class Scanner:
                         elif entry.is_file(follow_symlinks=False):
                             percorso = Path(entry.path)
                             if percorso.suffix.lower() in valid_extensions:
-                                tutti_i_file.append(percorso)
-                                if time.time() - ultimo_aggiornamento > 0.05:
-                                    self.controller.metrics["global"][
-                                        "scan_file"] = f"{len(tutti_i_file)} file trovati..."
-                                    self.controller._trigger_metrics()
-                                    ultimo_aggiornamento = time.time()
+                                if not percorso.name.endswith(("_converted.mp4", "_converted.mkv", "_normalized.mp4", "_normalized.mkv")):
+                                    tutti_i_file.append(percorso)
+                                    if time.time() - ultimo_aggiornamento > 0.05:
+                                        self.controller.metrics["global"]["scan_file"] = f"{len(tutti_i_file)} file trovati..."
+                                        self.controller._trigger_metrics()
+                                        ultimo_aggiornamento = time.time()
                 except (PermissionError, FileNotFoundError):
                     pass
 
