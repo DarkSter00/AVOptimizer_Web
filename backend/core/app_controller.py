@@ -127,7 +127,7 @@ class AppController:
             self.audio_queue.add_task(sort_key=sort_key, file_path=file_path, file_info=metadata,
                                       delay_seconds=delay_seconds)
         elif needs_video:
-            status = "analyzed_waiting"
+            status = "pending"  # <-- FIX: Prima era 'analyzed_waiting', causava il flash cromatico errato!
             if metadata and metadata.get("measured_lufs") is None: metadata["measured_lufs"] = -24.0
             self.video_queue.add_task(sort_key=sort_key, file_path=file_path, file_info=metadata,
                                       delay_seconds=delay_seconds)
@@ -176,7 +176,6 @@ class AppController:
         self.scanner.scan_and_queue(directory_path, force_rescan, delay_seconds)
 
     def _trigger_metrics(self):
-        now = time.time()
         tot_files = 0
         tot_completed = 0
         tot_skipped = 0
@@ -185,11 +184,15 @@ class AppController:
         tot_aud_dur = 0.0
         tot_vid_dur = 0.0
         ui_order = {}
-        need_delayed_retrigger = False
+
+        # Memoria persistente degli stati per evitare "rimbalzi" (debounce nativo)
+        if not hasattr(self, 'folder_global_states'):
+            self.folder_global_states = {}
 
         for core_name, subfolders in self.metrics["cores"].items():
             for sub_name, data in subfolders.items():
-                is_proc = False
+                c_active = 0
+                c_in_queue = 0
                 c_done = 0
                 c_skip = 0
                 c_err = 0
@@ -198,8 +201,12 @@ class AppController:
                 for f_name, f_data in data.get("files", {}).items():
                     f_size_total += f_data.get("size", 0)
                     st = f_data.get("status", "")
+
+                    # Conteggio esatto per la logica di coda suggerita
                     if st in ("analyzing", "converting", "normalizing"):
-                        is_proc = True
+                        c_active += 1
+                    elif st in ("init", "pending", "analyzed_waiting"):
+                        c_in_queue += 1
                     elif st.startswith("completed"):
                         c_done += 1
                     elif st == "skipped":
@@ -223,35 +230,31 @@ class AppController:
                 total_items = data.get("total_files", 0)
                 is_all_finished = (total_items > 0 and (c_done + c_skip + c_err) == total_items)
 
-                # --- NUOVA LOGICA DEL TIMER ---
-                if not hasattr(self, 'folder_was_proc'):
-                    self.folder_was_proc = {}
-
-                was_proc = self.folder_was_proc.get(sub_name, False)
-
-                if is_proc:
-                    self.folder_active_timers[sub_name] = now
-                elif was_proc:
-                    self.folder_active_timers[sub_name] = now
-
-                self.folder_was_proc[sub_name] = is_proc
-
-                last_active = self.folder_active_timers.get(sub_name, 0)
-                time_since_active = now - last_active
-                is_within_grace_period = (time_since_active < 3.0)
-                # ------------------------------
+                # --- NUOVA LOGICA: STATO BASATO SULLE CODE ---
+                prev_state = self.folder_global_states.get(sub_name, "In Attesa")
+                new_state = prev_state
 
                 if total_items > 0 and str(sub_name) in self.excluded_targets:
-                    data["status"] = "Esclusa"
-                elif is_proc:
-                    data["status"] = "In Esecuzione"
-                elif is_within_grace_period:
-                    data["status"] = "In Esecuzione"
-                    need_delayed_retrigger = True
+                    new_state = "Esclusa"
                 elif is_all_finished:
-                    data["status"] = "Completato"
+                    new_state = "Completato"
+                elif c_active > 0:
+                    # Almeno un file in lavorazione -> in esecuzione sicura
+                    new_state = "In Esecuzione"
+                elif c_in_queue > 0:
+                    # Non ci sono file in lavorazione, ma la cartella ha file pendenti
+                    if prev_state == "In Esecuzione":
+                        # Era già attiva: sta solo cedendo il passo tra un file e l'altro -> MANTIENI ESECUZIONE
+                        new_state = "In Esecuzione"
+                    else:
+                        # Non è ancora mai partita per questa sessione
+                        new_state = "In Attesa"
                 else:
-                    data["status"] = "In Attesa"
+                    new_state = "In Attesa"
+
+                self.folder_global_states[sub_name] = new_state
+                data["status"] = new_state
+                # ----------------------------------------------
 
             def sort_func(item):
                 sub_n, d = item
@@ -268,14 +271,7 @@ class AppController:
 
             ui_order[core_name] = [k for k, v in sorted(subfolders.items(), key=sort_func)]
 
-        if need_delayed_retrigger:
-            with self.retrigger_lock:
-                if self.retrigger_timer:
-                    self.retrigger_timer.cancel()
-                self.retrigger_timer = threading.Timer(0.5, self._trigger_metrics)
-                self.retrigger_timer.daemon = True
-                self.retrigger_timer.start()
-
+        # Salvataggio metriche per invio al websocket
         self.metrics["global"]["total_files"] = tot_files
         self.metrics["global"]["completed"] = tot_completed
         self.metrics["global"]["skipped"] = tot_skipped
@@ -290,7 +286,9 @@ class AppController:
             self.metrics["global"]["saved_space"] = 0
 
         self.metrics["ui_order"] = ui_order
-        if self.on_metrics_update: self.on_metrics_update(self.metrics)
+
+        if self.on_metrics_update:
+            self.on_metrics_update(self.metrics)
 
     def _measure_lufs(self, file_path: Path, duration: float, engine: FFmpegEngine):
         engine.is_aborted = False
