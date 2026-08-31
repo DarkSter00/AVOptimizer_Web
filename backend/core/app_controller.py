@@ -476,10 +476,12 @@ class AppController:
 
                     if sub_data:
                         sub_data["video_processed_duration"] += duration
-                        if file_path.name in sub_data["files"]: sub_data["files"][file_path.name][
-                            "status"] = "completed_video"
+                        if file_path.name in sub_data["files"]: sub_data["files"][file_path.name]["status"] = "completed_video"
                 except Exception:
-                    pass
+                    if sub_data:
+                        sub_data["video_processed_duration"] += duration
+                        if file_path.name in sub_data["files"]:
+                            sub_data["files"][file_path.name]["status"] = "error"
             else:
                 if sub_data:
                     sub_data["video_processed_duration"] += duration
@@ -567,10 +569,12 @@ class AppController:
 
                     if sub_data:
                         sub_data["video_processed_duration"] += duration
-                        if file_path.name in sub_data["files"]: sub_data["files"][file_path.name][
-                            "status"] = "completed_audio"
+                        if file_path.name in sub_data["files"]: sub_data["files"][file_path.name]["status"] = "completed_audio"
                 except Exception:
-                    pass
+                    if sub_data:
+                        sub_data["video_processed_duration"] += duration
+                        if file_path.name in sub_data["files"]:
+                            sub_data["files"][file_path.name]["status"] = "error"
             else:
                 if sub_data:
                     sub_data["video_processed_duration"] += duration
