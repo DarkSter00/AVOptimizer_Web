@@ -176,40 +176,82 @@ class AppController:
         self.scanner.scan_and_queue(directory_path, force_rescan, delay_seconds)
 
     def _trigger_metrics(self):
-        total_items = data.get("total_files", 0)
-        is_all_finished = (total_items > 0 and (c_done + c_skip + c_err) == total_items)
+        now = time.time()
+        tot_files = 0
+        tot_completed = 0
+        tot_skipped = 0
+        tot_errors = 0
+        tot_dur = 0.0
+        tot_aud_dur = 0.0
+        tot_vid_dur = 0.0
+        ui_order = {}
+        need_delayed_retrigger = False
 
-        # --- NUOVA LOGICA DEL TIMER ---
-        if not hasattr(self, 'folder_was_proc'):
-            self.folder_was_proc = {}
+        for core_name, subfolders in self.metrics["cores"].items():
+            for sub_name, data in subfolders.items():
+                is_proc = False
+                c_done = 0
+                c_skip = 0
+                c_err = 0
+                f_size_total = 0
 
-        was_proc = self.folder_was_proc.get(sub_name, False)
+                for f_name, f_data in data.get("files", {}).items():
+                    f_size_total += f_data.get("size", 0)
+                    st = f_data.get("status", "")
+                    if st in ("analyzing", "converting", "normalizing"):
+                        is_proc = True
+                    elif st.startswith("completed"):
+                        c_done += 1
+                    elif st == "skipped":
+                        c_skip += 1
+                    elif st == "error":
+                        c_err += 1
 
-        if is_proc:
-            # Aggiorna costantemente finché elabora
-            self.folder_active_timers[sub_name] = now
-        elif was_proc:
-            # Il processo è appena terminato: facciamo partire i 3 secondi esatti ora
-            self.folder_active_timers[sub_name] = now
+                data["folder_size"] = f_size_total
+                tot_files += data.get("total_files", 0)
+                tot_completed += c_done
+                tot_skipped += c_skip
+                tot_errors += c_err
+                tot_dur += data.get("total_duration", 0.0)
+                tot_aud_dur += data.get("audio_processed_duration", 0.0)
+                tot_vid_dur += data.get("video_processed_duration", 0.0)
 
-        self.folder_was_proc[sub_name] = is_proc
+                data["completed"] = c_done
+                data["skipped"] = c_skip
+                data["errors"] = c_err
 
-        last_active = self.folder_active_timers.get(sub_name, 0)
-        time_since_active = now - last_active
-        is_within_grace_period = (time_since_active < 3.0)
-        # ------------------------------
+                total_items = data.get("total_files", 0)
+                is_all_finished = (total_items > 0 and (c_done + c_skip + c_err) == total_items)
 
-        if total_items > 0 and str(sub_name) in self.excluded_targets:
-            data["status"] = "Esclusa"
-        elif is_proc:
-            data["status"] = "In Esecuzione"
-        elif is_within_grace_period:
-            data["status"] = "In Esecuzione"
-            need_delayed_retrigger = True
-        elif is_all_finished:
-            data["status"] = "Completato"
-        else:
-            data["status"] = "In Attesa"
+                # --- NUOVA LOGICA DEL TIMER ---
+                if not hasattr(self, 'folder_was_proc'):
+                    self.folder_was_proc = {}
+
+                was_proc = self.folder_was_proc.get(sub_name, False)
+
+                if is_proc:
+                    self.folder_active_timers[sub_name] = now
+                elif was_proc:
+                    self.folder_active_timers[sub_name] = now
+
+                self.folder_was_proc[sub_name] = is_proc
+
+                last_active = self.folder_active_timers.get(sub_name, 0)
+                time_since_active = now - last_active
+                is_within_grace_period = (time_since_active < 3.0)
+                # ------------------------------
+
+                if total_items > 0 and str(sub_name) in self.excluded_targets:
+                    data["status"] = "Esclusa"
+                elif is_proc:
+                    data["status"] = "In Esecuzione"
+                elif is_within_grace_period:
+                    data["status"] = "In Esecuzione"
+                    need_delayed_retrigger = True
+                elif is_all_finished:
+                    data["status"] = "Completato"
+                else:
+                    data["status"] = "In Attesa"
 
             def sort_func(item):
                 sub_n, d = item
