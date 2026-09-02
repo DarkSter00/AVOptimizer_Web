@@ -7,8 +7,25 @@
 .subfolder-card.active-execution { border-color: var(--warning); box-shadow: 0 0 20px rgba(245, 158, 11, 0.3); transform: translateY(-2px); }
 .subfolder-card.folder-excluded { opacity: 0.35 !important; filter: grayscale(100%) !important; pointer-events: none; }
 .subfolder-card.folder-excluded .card-inner { background: #18181E !important; border: 1px dashed #555; pointer-events: auto; }
-.subfolder-card.folder-completed { border-color: var(--f-completato) !important; }
-.subfolder-card.folder-completed .card-inner { background: transparent !important; }
+
+/* STATO: COMPLETATO e COMPLETANDO */
+.subfolder-card.folder-completed,
+.subfolder-card.folder-completando {
+    border-color: var(--f-completato) !important;
+}
+
+.subfolder-card.folder-completed .card-inner,
+.subfolder-card.folder-completando .card-inner {
+    background: rgba(16, 185, 129, 0.08) !important;
+}
+
+.subfolder-card.folder-completed .status-badge,
+.subfolder-card.folder-completando .status-badge {
+    border-color: var(--f-completato);
+    color: var(--f-completato);
+    background-color: rgba(16, 185, 129, 0.1);
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.2);
+}
 
 .ring-main { position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px; border-radius: 12px; z-index: 1; pointer-events: none; transition: opacity 0.5s ease; padding: 2px; -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
 .subfolder-card.folder-excluded .ring-main, .subfolder-card.folder-completed .ring-main { display: none; }
@@ -356,3 +373,54 @@
     0% { transform: translateY(-2px); }
     100% { transform: translateY(2px); }
 }
+
+/* --- ANIMAZIONE DI INGRESSO A ONDA (Sinistra -> Destra, Alto -> Basso) --- */
+
+@keyframes staggeredPopIn {
+    0% {
+        opacity: 0;
+        /* Usiamo 'translate' nativo invece di 'transform' per non bloccare le animazioni FLIP del Javascript! */
+        translate: 0 15px;
+    }
+    100% {
+        opacity: 1;
+        translate: 0 0;
+    }
+}
+
+/* Rimuove l'animazione dai contenitori genitori per poter animare i singoli figli */
+.subfolder-card .card-inner > .card-header,
+.subfolder-card .card-inner > .card-footer {
+    opacity: 1;
+    animation: none;
+}
+
+/* Tutti gli elementi interni partono invisibili e si animano con la stessa curva */
+.subfolder-card .folder-header-btn.left-btn,
+.subfolder-card .clickable-header-box,
+.subfolder-card .folder-header-btn.right-btn,
+.subfolder-card .file-grid-animator,
+.subfolder-card .footer-buttons .badge,
+.subfolder-card .footer-info > * {
+    opacity: 0;
+    animation: staggeredPopIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* HEADER: Ingresso da Sinistra a Destra */
+.subfolder-card .folder-header-btn.left-btn { animation-delay: 0.05s; }
+.subfolder-card .clickable-header-box       { animation-delay: 0.10s; }
+.subfolder-card .folder-header-btn.right-btn{ animation-delay: 0.15s; }
+
+/* GRID: Scende al centro */
+.subfolder-card .file-grid-animator         { animation-delay: 0.20s; }
+
+/* FOOTER LEFT: Ingresso Pillole da Sinistra a Destra */
+.subfolder-card .footer-buttons .badge:nth-child(1) { animation-delay: 0.25s; }
+.subfolder-card .footer-buttons .badge:nth-child(2) { animation-delay: 0.30s; }
+.subfolder-card .footer-buttons .badge:nth-child(3) { animation-delay: 0.35s; }
+.subfolder-card .footer-buttons .badge:nth-child(4) { animation-delay: 0.40s; }
+
+/* FOOTER RIGHT: Ingresso bottoni ETA e Size da Sinistra a Destra */
+.subfolder-card .footer-info > :nth-child(1) { animation-delay: 0.45s; }
+.subfolder-card .footer-info > :nth-child(2) { animation-delay: 0.50s; }
+.subfolder-card .footer-info > :nth-child(3) { animation-delay: 0.55s; }

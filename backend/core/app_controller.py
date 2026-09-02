@@ -178,7 +178,6 @@ class AppController:
         tot_aud_dur = 0.0
         tot_vid_dur = 0.0
         ui_order = {}
-
         now = time.time()
         need_delayed_retrigger = False
 
@@ -195,7 +194,6 @@ class AppController:
                 c_aud = 0
                 f_size_total = 0
                 valid_size = 0
-
                 count_meta = 0
                 count_v_codec = 0
                 count_a_codec = 0
@@ -205,10 +203,8 @@ class AppController:
                     f_size = f_data.get("size", 0)
                     f_size_total += f_size
                     st = f_data.get("status", "")
-
                     if st != "error":
                         valid_size += f_size
-
                     if st in ("analyzing", "converting", "normalizing"):
                         c_active += 1
                     elif st in ("init", "pending", "analyzed_waiting"):
@@ -219,11 +215,10 @@ class AppController:
                         c_skip += 1
                     elif st == "error":
                         c_err += 1
-
                     if st == "analyzed_waiting":
                         c_aud += 1
 
-                    # Calcolo Metriche Specifiche (Il VERO 100%)
+                    # Calcolo Metriche Specifiche
                     if st.startswith("completed") or st == "skipped":
                         count_meta += 1
                         count_v_codec += 1
@@ -253,7 +248,6 @@ class AppController:
                 data["is_processing"] = c_active > 0
 
                 total_items = data.get("total_files", 0)
-
                 data["count_meta"] = count_meta
                 data["count_v_codec"] = count_v_codec
                 data["count_a_codec"] = count_a_codec
@@ -274,7 +268,6 @@ class AppController:
 
                 # STATO IBRIDO: CODE + TIMER
                 prev_state = self.folder_global_states.get(sub_name, "In Attesa")
-
                 if c_active > 0:
                     self.folder_active_timers[sub_name] = now
 
@@ -287,7 +280,19 @@ class AppController:
                 if total_items > 0 and str(sub_name) in self.excluded_targets:
                     new_state = "Esclusa"
                 elif is_all_finished:
-                    new_state = "Completato"
+                    if prev_state not in ("Completato", "Completando..."):
+                        # Avvia l'animazione di completamento tenendola in alto per 2 secondi
+                        new_state = "Completando..."
+                        self.folder_active_timers[sub_name] = now
+                        need_delayed_retrigger = True
+                    elif prev_state == "Completando...":
+                        if time_since_active < 2.0:
+                            new_state = "Completando..."
+                            need_delayed_retrigger = True
+                        else:
+                            new_state = "Completato"
+                    else:
+                        new_state = "Completato"
                 elif c_active > 0:
                     new_state = "In Esecuzione"
                 elif c_in_queue > 0:
@@ -309,7 +314,7 @@ class AppController:
                     p = 3
                 elif st == "Completato":
                     p = 2
-                elif st == "In Esecuzione":
+                elif st in ("In Esecuzione", "Completando..."):
                     p = 0
                 else:
                     p = 1
@@ -339,7 +344,6 @@ class AppController:
             self.metrics["global"]["saved_space"] = 0
 
         self.metrics["ui_order"] = ui_order
-
         if self.on_metrics_update:
             self.on_metrics_update(self.metrics)
 

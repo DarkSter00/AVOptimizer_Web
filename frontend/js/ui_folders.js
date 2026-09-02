@@ -156,6 +156,9 @@ function updateCardData(subPath, subData, safeId) {
     const card = document.getElementById(safeId);
     if (!card) return;
 
+    // Verifica se è il primissimo aggiornamento visivo della card
+    const isFirstUpdate = !card.dataset.initialized;
+
     // Ferma l'aggiornamento visivo se è in corso un'animazione Overlay manuale
     const isAnimatingExclusion = card.dataset.isAnimatingExclusion === "true";
 
@@ -176,6 +179,7 @@ function updateCardData(subPath, subData, safeId) {
 
     let isEsclusa = (subData.status === "Esclusa");
     let isCompletato = (subData.status === "Completato");
+    let isCompletando = (subData.status === "Completando...");
     let is_visually_processing = (subData.status === "In Esecuzione");
 
     // Helper intelligente per innescare l'animazione Elastica unicamente al cambio del testo
@@ -191,12 +195,20 @@ function updateCardData(subPath, subData, safeId) {
         if (badgeEl.textContent !== text) {
             badgeEl.textContent = text;
             badgeEl.classList.remove('status-bounce');
-            void badgeEl.offsetWidth; // Forza il browser a registrare il reset dell'animazione
-            badgeEl.classList.add('status-bounce');
+            void badgeEl.offsetWidth; // Forza il browser a registrare il reset
+
+            // Applica il rimbalzo SOLO se la cartella era già presente sullo schermo (non al primo caricamento)
+            if (!isFirstUpdate) {
+                badgeEl.classList.add('status-bounce');
+            }
         }
     };
 
-    // Esegue i cambiamenti visivi solo se non interferisce con l'Overlay
+    const overlay = document.getElementById(`overlay-${safeId}`);
+    const overlayIcon = document.getElementById(`overlay-icon-${safeId}`);
+    const overlayTitle = document.getElementById(`overlay-title-${safeId}`);
+
+    // Esegue i cambiamenti visivi solo se non interferisce con l'Overlay utente manuale
     if (!isAnimatingExclusion) {
         if (btnExclude) {
             const iconContainer = document.getElementById(`btn-exclude-icon-${safeId}`);
@@ -213,14 +225,30 @@ function updateCardData(subPath, subData, safeId) {
             }
         }
 
-        if (isEsclusa) {
-            card.classList.remove("active-execution", "folder-completed"); card.classList.add("folder-excluded");
+        // Smistamento Stati Principale
+        if (isCompletando) {
+            card.classList.remove("active-execution", "folder-excluded", "folder-completed");
+            card.classList.add("folder-completando");
+            updateBadgeText("COMPLETAMENTO");
+            if (overlay) {
+                overlayIcon.className = "fa-solid fa-check-circle card-status-icon";
+                overlayIcon.style.color = "var(--success)";
+                overlayTitle.textContent = "CARTELLA COMPLETATA";
+                overlayTitle.style.color = "var(--success)";
+                overlay.classList.add("active");
+            }
+        } else if (isEsclusa) {
+            card.classList.remove("active-execution", "folder-completed", "folder-completando");
+            card.classList.add("folder-excluded");
             updateBadgeText("ESCLUSA");
+            if(overlay) overlay.classList.remove("active");
             if (!userOpenedCards.has(subPath)) expandedCards.delete(subPath);
 
         } else if (isCompletato) {
-            card.classList.remove("active-execution", "folder-excluded"); card.classList.add("folder-completed");
+            card.classList.remove("active-execution", "folder-excluded", "folder-completando");
+            card.classList.add("folder-completed");
             updateBadgeText("COMPLETATO");
+            if(overlay) overlay.classList.remove("active");
 
             if (!userOpenedCards.has(subPath) && expandedCards.has(subPath)) {
                 if (!folderCloseTimers[subPath]) {
@@ -229,14 +257,17 @@ function updateCardData(subPath, subData, safeId) {
             } else if (!expandedCards.has(subPath)) { if (folderCloseTimers[subPath]) { clearTimeout(folderCloseTimers[subPath]); delete folderCloseTimers[subPath]; } }
 
         } else if (is_visually_processing) {
-            card.classList.remove("folder-completed", "folder-excluded"); card.classList.add("active-execution");
+            card.classList.remove("folder-completed", "folder-excluded", "folder-completando");
+            card.classList.add("active-execution");
             updateBadgeText("IN ESECUZIONE");
+            if(overlay) overlay.classList.remove("active");
             expandedCards.add(subPath);
             if (folderCloseTimers[subPath]) { clearTimeout(folderCloseTimers[subPath]); delete folderCloseTimers[subPath]; }
 
         } else {
-            card.classList.remove("active-execution", "folder-completed", "folder-excluded");
+            card.classList.remove("active-execution", "folder-completed", "folder-excluded", "folder-completando");
             updateBadgeText("IN ATTESA");
+            if(overlay) overlay.classList.remove("active");
 
             if (!userOpenedCards.has(subPath) && expandedCards.has(subPath)) {
                 if (!folderCloseTimers[subPath]) {
@@ -294,4 +325,9 @@ function updateCardData(subPath, subData, safeId) {
 
     if (animatorEl) { if (expandedCards.has(subPath)) animatorEl.classList.add("open"); else animatorEl.classList.remove("open"); }
     if (expandedCards.has(subPath)) { renderFileBoxes(gridEl, subData.files); }
+
+    // Al termine di tutte le operazioni iniziali, blocca il flag in modo che i successivi update possano rimbalzare
+    if (isFirstUpdate) {
+        card.dataset.initialized = "true";
+    }
 }

@@ -69,11 +69,17 @@ function updateDashboard(metrics) {
         isPaused = g.is_paused;
         updateTutorialUI();
     }
+
+    const blocker = document.getElementById("canvas-blocker");
+
     if (g.is_scanning) {
         if (scannerWidget) scannerWidget.classList.remove("hidden");
+        if (blocker) blocker.classList.remove("hidden"); // Blocca i click utente
+
         let stepName = "Inizializzazione...";
         let fileStr = g.scan_file || "Attendere...";
         let progress = g.scan_progress || 0;
+
         if (g.scan_step === 1) { stepName = "Mappatura disco..."; progress = 5; }
         else if (g.scan_step === 2) { stepName = "Interrogazione Database RAM..."; progress = 10; }
         else if (g.scan_step === 3) { stepName = "Lettura Cache DB Metadati"; progress = g.scan_progress || 0; fileStr = g.scan_file || "Controllo file in cache..."; }
@@ -91,6 +97,7 @@ function updateDashboard(metrics) {
         if (scannerPctText) scannerPctText.textContent = `${Math.floor(progress)}%`;
     } else {
         if (scannerWidget) scannerWidget.classList.add("hidden");
+        if (blocker) blocker.classList.add("hidden"); // Sblocca
     }
     if(lblFiles) lblFiles.textContent = `${g.completed} / ${g.total_files}`;
     if(lblSkipped) lblSkipped.textContent = `${g.skipped}`;
