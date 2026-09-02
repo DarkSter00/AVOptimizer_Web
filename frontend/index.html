@@ -4,30 +4,36 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>A/V Optimizer v.8 Web</title>
-  <link rel="stylesheet" href="style.css?v=34">
+  <link rel="stylesheet" href="style.css?v=35">
+  
+  <!-- Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-<button id="btn-mobile-menu" class="btn-mobile-menu">🍔</button>
+<button id="btn-mobile-menu" class="btn-mobile-menu"><i class="fa-solid fa-bars"></i></button>
 <div id="mobile-overlay" class="mobile-overlay"></div>
+
 <div class="app-container">
   <aside class="sidebar">
     <div class="brand">
-      <h2>⚡ A/V Optimizer</h2>
+      <h2><i class="fa-solid fa-bolt"></i> A/V Optimizer</h2>
       <span class="version">v.8 Web</span>
     </div>
+
     <div class="actions">
-      <button id="btn-add-folder" class="btn btn-primary pulse-primary">📂 Aggiungi Cartella</button>
+      <button id="btn-add-folder" class="btn btn-primary pulse-primary"><i class="fa-solid fa-folder-open"></i> Aggiungi Cartella</button>
       <div style="margin-bottom: 5px; display: flex; align-items: center; gap: 8px;">
         <input type="checkbox" id="chk-force-rescan" style="cursor: pointer; width: 14px; height: 14px;">
         <label for="chk-force-rescan" style="font-size: 11px; color: var(--text-muted); cursor: pointer;">Forza Ricontrollo (Ignora Cache)</label>
       </div>
       <div class="btn-group">
-        <button id="btn-toggle-play" class="btn btn-secondary" disabled>▶ Avvia</button>
-        <button id="btn-stop" class="btn btn-danger">⏹ Stop Assoluto</button>
+        <button id="btn-toggle-play" class="btn btn-secondary" disabled><i class="fa-solid fa-play"></i> Avvia</button>
+        <button id="btn-stop" class="btn btn-danger"><i class="fa-solid fa-stop"></i> Stop Assoluto</button>
       </div>
-      <button id="btn-settings" class="btn btn-secondary">⚙️ Impostazioni / Log</button>
-      <button id="btn-db-viewer" class="btn btn-outline-primary mt-2">🗄️ Apri Visualizzatore DB</button>
+      <button id="btn-settings" class="btn btn-secondary"><i class="fa-solid fa-gear"></i> Impostazioni / Log</button>
+      <button id="btn-db-viewer" class="btn btn-outline-primary mt-2"><i class="fa-solid fa-database"></i> Apri Visualizzatore DB</button>
     </div>
+
     <div class="global-metrics">
       <h4>STATO GLOBALE</h4>
       <div class="progress-bar-container">
@@ -53,6 +59,8 @@
       </div>
     </div>
   </aside>
+
+  <!-- Widget Scansione -->
   <div id="scanner-widget" class="floating-widget hidden">
     <div class="widget-progress-bg warning-bg" id="scanner-bg"></div>
     <div class="widget-content">
@@ -65,6 +73,8 @@
       <div class="widget-file" id="scanner-file-text">Attendere...</div>
     </div>
   </div>
+
+  <!-- Widget Rendering -->
   <div id="ui-loading-overlay" class="floating-widget hidden">
     <div class="widget-progress-bg primary-bg" id="ui-builder-bg"></div>
     <div class="widget-content">
@@ -77,43 +87,52 @@
       <div class="widget-file">Generazione riquadri visivi in corso</div>
     </div>
   </div>
+
   <main class="main-content">
     <header class="top-navbar slide-down" id="top-navbar" style="display: none;">
       <div class="core-selector" id="core-selector"></div>
       <div>
-        <button class="btn btn-secondary mr-2" onclick="openModal('graph')">📊 Grafo Struttura</button>
-        <button id="btn-delete-core" class="btn btn-outline-danger">🗑️ Elimina Core</button>
+        <button class="btn btn-secondary mr-2" onclick="openModal('graph')"><i class="fa-solid fa-sitemap"></i> Grafo Struttura</button>
+        <button id="btn-delete-core" class="btn btn-outline-danger"><i class="fa-solid fa-trash"></i> Elimina Core</button>
       </div>
     </header>
+
     <div class="canvas-scroll-wrapper" id="canvas-scroll-wrapper">
       <div id="canvas-area" class="canvas-area"></div>
     </div>
   </main>
+
+  <!-- Modale Dettagli -->
   <div id="data-modal" class="modal-overlay hidden">
     <div class="modal-card">
       <div class="modal-header">
         <h3 id="modal-title">Dettagli</h3>
-        <button class="btn-icon" onclick="closeModal()">✖</button>
+        <button class="btn-icon" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="modal-body" id="modal-body"></div>
     </div>
   </div>
 </div>
 
-<!-- DRAG AND DROP OVERLAY -->
+<!-- DRAG AND DROP OVERLAY FULLSCREEN -->
 <div id="dnd-overlay" class="dnd-overlay">
-  <div class="dnd-box">
-    <div class="dnd-icon">📂</div>
-    <div class="dnd-text">Rilascia le cartelle qui per aggiungerle</div>
+  <div class="dnd-box" id="dnd-box">
+    <div class="dnd-icon"><i class="fa-solid fa-folder-plus"></i></div>
+    <div class="dnd-text">Rilascia le cartelle per l'analisi</div>
+    <div class="dnd-subtext">Verranno accodate ai Core di esecuzione</div>
   </div>
 </div>
 
-<!-- ARCHITETTURA JS MODULARE -->
 <script src="js/globals.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/api.js"></script>
-<script src="js/animations.js"></script>
-<script src="js/ui.js"></script>
+<script src="js/ui_dashboard.js"></script>
+<script src="js/ui_modals.js"></script>
+<script src="js/ui_files.js"></script>
+<script src="js/ui_folders.js"></script>
 <script src="js/main.js"></script>
+<script src="js/ui_folder_header.js"></script>
+<script src="js/ui_folder_footer_left.js"></script>
+<script src="js/ui_folder_footer_right.js"></script>
 </body>
 </html>

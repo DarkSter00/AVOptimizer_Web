@@ -1,0 +1,358 @@
+.canvas-scroll-wrapper { flex-grow: 1; overflow-y: auto; overflow-x: hidden; height: 100%; position: relative; }
+.canvas-area { padding: 20px 30px; padding-bottom: 80px; display: flex; gap: 30px; align-items: flex-start; }
+.masonry-col { flex: 1; display: flex; flex-direction: column; gap: 30px; min-width: 0; }
+
+.subfolder-card { width: 100%; border-radius: 12px; padding: 0; background: transparent; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.2); transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.6s ease, border-color 0.4s ease; position: relative; animation: popIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; border: 2px solid var(--border); }
+.subfolder-card:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(0,0,0,0.4), 0 0 15px rgba(59, 130, 246, 0.2); z-index: 10; }
+.subfolder-card.active-execution { border-color: var(--warning); box-shadow: 0 0 20px rgba(245, 158, 11, 0.3); transform: translateY(-2px); }
+.subfolder-card.folder-excluded { opacity: 0.35 !important; filter: grayscale(100%) !important; pointer-events: none; }
+.subfolder-card.folder-excluded .card-inner { background: #18181E !important; border: 1px dashed #555; pointer-events: auto; }
+.subfolder-card.folder-completed { border-color: var(--f-completato) !important; }
+.subfolder-card.folder-completed .card-inner { background: transparent !important; }
+
+.ring-main { position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px; border-radius: 12px; z-index: 1; pointer-events: none; transition: opacity 0.5s ease; padding: 2px; -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+.subfolder-card.folder-excluded .ring-main, .subfolder-card.folder-completed .ring-main { display: none; }
+
+.card-inner { position: relative; z-index: 3; background: var(--bg-folder-attesa); border-radius: 10px; padding: 15px; display: flex; flex-direction: column; transition: background-color 0.4s ease; }
+.card-header { display: flex; flex-direction: column; gap: 10px; z-index: 2; position: relative; }
+.card-title-row { display: flex; justify-content: space-between; align-items: center; width: 100%; overflow: hidden; }
+.card-header-group { display: flex; flex-grow: 1; margin-right: 15px; gap: 8px; }
+
+/* -- FORME A PILLOLA HEADER -- */
+.card-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    overflow: hidden;
+    gap: 10px;
+}
+
+/* Pulsanti Tondi Espandibili a Livelli Sovrapposti */
+.folder-header-btn {
+    position: relative;
+    height: 42px;
+    width: 42px; /* Muro di cemento: Dimensione fissa */
+    min-width: 42px;
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    cursor: pointer;
+    overflow: hidden;
+    flex-shrink: 0;
+    /* Chiusura veloce con effetto Squeeze (rimbalzo all'indietro estremo) */
+    transition: width 0.35s cubic-bezier(0.5, -0.4, 0.5, 1) 0s,
+    background-color 0.3s, border-color 0.3s;
+}
+
+/* Colori Base */
+.folder-header-btn.left-btn { background-color: rgba(59, 130, 246, 0.15); border-color: var(--primary); }
+.folder-header-btn.left-btn .btn-icon-circle { color: var(--primary); }
+
+.folder-header-btn.right-btn { background-color: rgba(239, 68, 68, 0.15); border-color: var(--danger); }
+.folder-header-btn.right-btn .btn-icon-circle { color: var(--danger); }
+
+.folder-header-btn.right-btn.is-excluded { background-color: rgba(16, 185, 129, 0.15); border-color: var(--success); }
+.folder-header-btn.right-btn.is-excluded .btn-icon-circle { color: var(--success); }
+
+/* HOVER: Attesa di 0.25s, espansione guidata dalla larghezza reale */
+.folder-header-btn.left-btn:hover {
+    width: 165px; /* Aumentato per ospitare la pillola di Apri cartella */
+    transition: width 0.4s cubic-bezier(0.34, 1.5, 0.64, 1) 0.25s, background-color 0.3s, border-color 0.3s;
+}
+.folder-header-btn.right-btn:hover {
+    width: 185px; /* Aumentato per ospitare la pillola di Escludi cartella */
+    transition: width 0.4s cubic-bezier(0.34, 1.5, 0.64, 1) 0.25s, background-color 0.3s, border-color 0.3s;
+}
+
+.folder-header-btn.right-btn.is-excluded:hover {
+    width: 185px;
+}
+
+/* CLICK / CONFERMA: Espansione/Restringimento immediato senza delay */
+.folder-header-btn.confirm-state {
+    width: 145px !important; /* Aumentato per ospitare comodamente il Sicuro? e la sua icona */
+    transition: width 0.3s cubic-bezier(0.34, 1.5, 0.64, 1) 0s !important;
+}
+
+/* Icone fisse e centrate ai bordi estremi (Inamovibili) */
+.folder-header-btn .btn-icon-circle {
+    position: absolute;
+    top: 0; bottom: 0; margin: auto;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    z-index: 5;
+    transition: color 0.3s;
+}
+.folder-header-btn.left-btn .btn-icon-circle { left: 0; }
+.folder-header-btn.right-btn .btn-icon-circle { right: 0; }
+
+/* Contenitore Testi: Crea la finestra di ancoraggio per le pillole */
+.folder-header-btn .btn-text-wrapper {
+    position: absolute;
+    top: 0; bottom: 0;
+    opacity: 0;
+    transition: opacity 0.2s ease 0s;
+    z-index: 1;
+}
+/* Limita l'area in modo da non sormontare mai l'icona */
+.folder-header-btn.left-btn .btn-text-wrapper { left: 40px; right: 0; }
+.folder-header-btn.right-btn .btn-text-wrapper { right: 40px; left: 0; }
+
+/* Inizio Animazione Sincronizzata in Hover e Confirm */
+.folder-header-btn:hover .btn-text-wrapper {
+    opacity: 1;
+    transition: opacity 0.2s ease 0.2s; /* Sincronizzato con il resize del pulsante */
+}
+.folder-header-btn.confirm-state .btn-text-wrapper {
+    opacity: 1;
+    transition: opacity 0.2s ease 0s !important;
+}
+
+/* Pillole di Testo Singole */
+.btn-text {
+    position: absolute;
+    top: 0; bottom: 0; margin: auto;
+    height: fit-content;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    transition: transform 0.4s cubic-bezier(0.34, 1.5, 0.64, 1), opacity 0.2s ease;
+}
+
+/* Colori delle Pillole interne */
+.folder-header-btn .normal-text {
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--text-main);
+}
+.folder-header-btn .confirm-text {
+    background-color: rgba(16, 185, 129, 0.15);
+    border: 1px solid var(--success);
+    color: var(--success) !important; /* Forza il colore anche in hover */
+}
+
+/* --- ANIMAZIONI SCORRIMENTO TASTO SINISTRO --- */
+.folder-header-btn.left-btn .btn-text { left: 6px; } /* Margine di sicurezza dall'icona */
+
+.folder-header-btn.left-btn .normal-text,
+.folder-header-btn.left-btn .confirm-text { transform: translateX(-25px); opacity: 0; pointer-events: none; }
+
+.folder-header-btn.left-btn:hover .normal-text { transform: translateX(0); opacity: 1; pointer-events: auto; transition-delay: 0.2s; }
+
+.folder-header-btn.left-btn.confirm-state .normal-text { transform: translateX(-25px); opacity: 0; pointer-events: none; transition-delay: 0s; }
+.folder-header-btn.left-btn.confirm-state .confirm-text { transform: translateX(0); opacity: 1; pointer-events: auto; transition-delay: 0s; }
+
+/* --- ANIMAZIONI SCORRIMENTO TASTO DESTRO --- */
+.folder-header-btn.right-btn .btn-text { right: 6px; } /* Margine di sicurezza dall'icona */
+
+.folder-header-btn.right-btn .normal-text,
+.folder-header-btn.right-btn .confirm-text { transform: translateX(25px); opacity: 0; pointer-events: none; }
+
+.folder-header-btn.right-btn:hover .normal-text { transform: translateX(0); opacity: 1; pointer-events: auto; transition-delay: 0.2s; }
+
+.folder-header-btn.right-btn.confirm-state .normal-text { transform: translateX(25px); opacity: 0; pointer-events: none; transition-delay: 0s; }
+.folder-header-btn.right-btn.confirm-state .confirm-text { transform: translateX(0); opacity: 1; pointer-events: auto; transition-delay: 0s; }
+
+/* Pillola Centrale Cartella */
+.clickable-header-box {
+    flex-grow: 1;
+    height: 42px;
+    padding: 4px 4px 4px 15px;
+    background-color: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.4s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    overflow: hidden;
+    min-width: 0;
+}
+
+.clickable-header-box:hover {
+    border-color: var(--warning);
+    background-color: rgba(245, 158, 11, 0.05);
+}
+
+.card-title-text-wrapper {
+    flex-grow: 1;
+    overflow: hidden;
+    margin-right: 10px;
+}
+
+.card-title-text {
+    font-size: 14px;
+    color: var(--text-main);
+    font-weight: bold;
+    white-space: nowrap;
+    display: block;
+}
+
+/* Stato Incapsulato a destra (Default: In Attesa) */
+.status-badge {
+    font-size: 10px;
+    font-weight: bold;
+    padding: 0 12px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    border-radius: 50px;
+    background-color: transparent;
+    border: 1px solid #555;
+    color: #aaa;
+    box-shadow: none;
+    flex-shrink: 0;
+    letter-spacing: 0.5px;
+
+    /* Transizioni fluide e organiche sui colori per ogni cambio di stato */
+    transition: color 0.4s ease, border-color 0.4s ease, background-color 0.4s ease, box-shadow 0.4s ease;
+
+    /* Il rimbalzo farà perno sul lato destro per non spingere contro il testo del titolo */
+    transform-origin: right center;
+}
+
+/* STATO: IN ESECUZIONE */
+.subfolder-card.active-execution .status-badge {
+    border-color: var(--warning);
+    color: var(--warning);
+    background-color: rgba(245, 158, 11, 0.1);
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+}
+
+/* STATO: COMPLETATO */
+.subfolder-card.folder-completed .status-badge {
+    border-color: var(--f-completato);
+    color: var(--f-completato);
+    background-color: rgba(16, 185, 129, 0.1);
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.2);
+}
+
+/* STATO: ESCLUSA */
+.subfolder-card.folder-excluded .status-badge {
+    border-color: #555;
+    color: #888;
+    background-color: rgba(0, 0, 0, 0.2);
+    box-shadow: none;
+}
+
+/* Classe trigger aggiunta da JS per l'animazione di rimbalzo al cambio parola */
+.status-bounce {
+    animation: badgeBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* L'animazione mescola lo Scale con il Padding per un effetto allargamento molto elastico */
+@keyframes badgeBounce {
+    0% { transform: scale(1); padding: 0 12px; }
+    30% { transform: scale(0.85); padding: 0 6px; }
+    60% { transform: scale(1.08); padding: 0 18px; }
+    100% { transform: scale(1); padding: 0 12px; }
+}
+
+/* --- CONTENITORE FOOTER GLOBALE --- */
+.card-footer {
+    padding-top: 0px; /* Gestito dinamicamente dal file-grid-animator sovrastante */
+    padding-bottom: 5px;
+    border-top: none; /* Rimossa la vecchia riga tratteggiata, sostituita dal riquadro */
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    margin-top: auto;
+    position: relative;
+    z-index: 2;
+}
+
+.footer-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    position: relative;
+    z-index: 10;
+}
+
+/* --- TRANSIZIONI DI INCLUSIONE / ESCLUSIONE --- */
+
+/* La cartella principale perde gli eventi, ma mantiene la cornice scura */
+.subfolder-card.folder-excluded {
+    pointer-events: none;
+    border-color: #333;
+}
+
+/* L'interno subisce l'effetto di Grigiore e Trasparenza, garantendo che l'overlay non venga decolorato */
+.subfolder-card.folder-excluded .card-inner {
+    background: #18181E !important;
+    border: 1px dashed #555;
+    pointer-events: auto;
+    opacity: 0.35 !important;
+    filter: grayscale(100%) !important;
+}
+
+/* Transizione molto morbida */
+.card-inner {
+    position: relative;
+    z-index: 3;
+    background: var(--bg-folder-attesa);
+    border-radius: 10px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    transition: background-color 0.4s ease, opacity 0.8s ease, filter 0.8s ease;
+}
+
+/* --- OVERLAY STATO CARTELLA (Centrale) --- */
+.card-status-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(20, 20, 25, 0.85); /* Sfondo molto coprente ma blurrato */
+    border-radius: 12px;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+    backdrop-filter: blur(4px);
+}
+.card-status-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+.card-status-icon {
+    font-size: 36px;
+    margin-bottom: 12px;
+}
+.card-status-title {
+    font-size: 22px;
+    font-weight: bold;
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+}
+.card-status-subtitle {
+    font-size: 14px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Animazione di spinta su e giù per l'icona di spostamento */
+.card-status-subtitle i {
+    animation: slideUpDown 1s infinite alternate ease-in-out;
+}
+@keyframes slideUpDown {
+    0% { transform: translateY(-2px); }
+    100% { transform: translateY(2px); }
+}

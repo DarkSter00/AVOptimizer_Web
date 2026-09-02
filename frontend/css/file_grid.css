@@ -1,0 +1,101 @@
+.file-grid-animator {
+    display: grid;
+    grid-template-rows: 0fr;
+    /* Margini simmetrici per renderlo esattamente equidistante tra header e footer */
+    margin-top: 12px;
+    margin-bottom: 12px;
+
+    /* Trucco UI: La riga separatrice chiusa è in realtà il bordo di questo box nascosto */
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid transparent;
+    border-left: 1px solid transparent;
+    border-right: 1px solid transparent;
+    border-radius: 2px;
+
+    transition: grid-template-rows 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-color 0.4s ease,
+    border-radius 0.4s ease,
+    background-color 0.4s ease;
+}
+
+.file-grid-animator.open {
+    grid-template-rows: 1fr;
+    /* Rivela l'intero riquadro arrotondato con un leggero incavo visivo */
+    border-color: var(--border);
+    border-radius: 12px;
+    background-color: rgba(0, 0, 0, 0.15);
+}
+
+.file-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-content: flex-start;
+    align-items: center;
+    background-color: transparent;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0 15px; /* Padding base per evitare scatti orizzontali */
+    transition: opacity 0.3s ease, padding 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    opacity: 0;
+}
+
+.file-grid-animator.open .file-grid {
+    opacity: 1;
+    padding: 15px; /* Spazio interno completo da aperto */
+    overflow: visible;
+    transition: opacity 0.4s ease 0.2s, padding 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.file-box { width: 42px; height: 42px; flex-shrink: 0; background-color: var(--bg-panel); border: 1px dashed var(--f-attesa); border-radius: 8px; position: relative; display: flex; overflow: hidden; transition: width 0.4s ease, height 0.4s ease, border-color 0.4s ease; cursor: pointer; --op-color: var(--warning); }
+.file-grid-animator.open .file-box { animation: popInBounce 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.file-box:not(.state-processing):not(.force-expand):hover { transform: translateY(-2px) scale(1.05); box-shadow: 0 5px 15px rgba(0,0,0, 0.3); z-index: 10; }
+
+.file-progress-wrapper { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+.file-progress-bg { height: 100%; width: 100%; opacity: 0.15; transform-origin: left; transform: scaleX(0); transition: background-color 0.4s ease, background 0.4s ease; }
+
+.file-icon-centered { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 16px; pointer-events: none; transition: opacity 0.3s; z-index: 1; }
+.file-icon-inline { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; font-size: 13px; background: rgba(0,0,0,0.3); border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); }
+
+.file-box-inner { display: none; width: 100%; height: 100%; padding: 10px; flex-direction: column; justify-content: center; gap: 8px; z-index: 2; }
+.state-processing .file-icon-centered, .force-expand .file-icon-centered { display: none; }
+.state-processing .file-box-inner, .force-expand .file-box-inner { display: flex; }
+
+.file-top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 15px; }
+.file-info-col { display: flex; flex-direction: column; gap: 4px; overflow: hidden; flex-grow: 1; }
+.file-title-row { display: flex; align-items: center; gap: 8px; }
+
+.file-op-text { font-size: 12px; font-weight: bold; letter-spacing: 1px; }
+.file-name-text { font-size: 13px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.file-meta-box { background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); display: flex; gap: 15px; font-size: 11px; white-space: nowrap; color: var(--text-muted); }
+.file-meta-box i { margin-right: 4px; }
+.file-meta-box span.val { color: var(--f-completato); font-weight: bold;}
+.meta-static { display: none; }
+.meta-processing { display: none; width: 100%; justify-content: flex-start; }
+.force-expand .meta-static { display: flex; }
+.state-processing .meta-processing { display: flex; }
+
+.file-stats-box { display: none; flex-direction: column; align-items: flex-end; justify-content: center; padding: 6px 12px; border-radius: 8px; background: rgba(0,0,0,0.5); min-width: 100px; }
+.state-processing .file-stats-box { display: flex; }
+
+.loading-border { border: 1px solid var(--op-color); animation: pulse-glow 1.5s infinite alternate; }
+@keyframes pulse-glow { 0% { box-shadow: 0 0 2px var(--op-color), inset 0 0 2px var(--op-color); } 100% { box-shadow: 0 0 10px var(--op-color), inset 0 0 5px var(--op-color); border-color: #fff; } }
+
+.eta-label { font-size: 11px; color: var(--text-muted); font-weight: bold; }
+.pct-label { font-size: 16px; font-weight: bold; text-shadow: 0 0 5px rgba(0,0,0,0.5); }
+
+.state-processing { width: 100%; height: 95px; border-style: solid !important; border-width: 2px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); }
+.force-expand { width: 100%; height: 95px; border-style: solid !important; border-width: 2px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.3); background-color: var(--bg-main); }
+
+.state-pending { border-color: var(--f-attesa); }
+.state-pending .file-icon-centered { color: var(--f-attesa); font-weight: bold; }
+.state-completed_full { border-color: var(--f-completato); border-style: dashed; background-color: rgba(16, 185, 129, 0.05); }
+.state-completed_full .file-icon-centered { color: var(--f-completato); }
+.state-completed_video, .state-completed_audio { border-color: var(--f-completato); border-style: dashed; background-color: rgba(16, 185, 129, 0.05); }
+.state-completed_video .file-icon-centered, .state-completed_audio .file-icon-centered { color: var(--f-completato); }
+.state-analyzed_waiting { border-color: var(--p-norm); border-style: dashed; background-color: rgba(139, 92, 246, 0.08); }
+.state-analyzed_waiting .file-icon-centered { color: var(--p-norm); }
+.state-skipped { border-color: var(--f-saltato); border-style: dashed; background-color: rgba(5, 150, 105, 0.05); }
+.state-skipped .file-icon-centered { color: var(--f-saltato); }
+.state-error { border-color: var(--f-errore); border-style: dashed; background-color: rgba(239, 68, 68, 0.08); }
+.state-error .file-icon-centered { color: var(--f-errore); }

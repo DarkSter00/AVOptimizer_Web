@@ -20,15 +20,13 @@ class AppController:
         self.db = DBManager()
         self.scanner = Scanner(self)
 
-        # Le 3 Code di Esecuzione Separate
-        self.audio_queue = QueueManager()  # Analisi LUFS
-        self.video_queue = QueueManager()  # Conversione pesante
-        self.norm_queue = QueueManager()  # Normalizzazione audio rapida
+        self.audio_queue = QueueManager()
+        self.video_queue = QueueManager()
+        self.norm_queue = QueueManager()
 
         self.excluded_targets = set()
         self.deleted_targets = set()
 
-        # Timer di grazia di 3 secondi per evitare chiusure e spostamenti prematuri
         self.folder_active_timers = {}
         self.retrigger_timer = None
         self.retrigger_lock = threading.Lock()
@@ -42,7 +40,6 @@ class AppController:
         self.is_processing_paused = True
         self.is_scanning_paused = False
         self.is_scanning_aborted = False
-
         self.workers = []
         self.engines = {}
         self.current_tasks = {}
@@ -62,6 +59,7 @@ class AppController:
             "cores": {},
             "ui_order": {}
         }
+
         self.on_metrics_update = None
         self.on_progress_update = None
         self.on_log_event = None
@@ -86,16 +84,16 @@ class AppController:
     def _route_task(self, core_name, sub_name, file_path, metadata, delay_seconds=0):
         sub_data = self.metrics["cores"].get(core_name, {}).get(sub_name)
         size = file_path.stat().st_size if file_path.exists() else 0
-
         ha_audio = False
         canali_audio = 2
         codec_v = "sconosciuto"
 
         if metadata:
             for s in metadata.get('streams', []):
-                if s.get('codec_type') == 'video' and codec_v == "sconosciuto": codec_v = s.get('codec_name',
-                                                                                                'sconosciuto').lower()
-                if s.get('codec_type') == 'audio': ha_audio, canali_audio = True, s.get('channels', 2)
+                if s.get('codec_type') == 'video' and codec_v == "sconosciuto":
+                    codec_v = s.get('codec_name', 'sconosciuto').lower()
+                if s.get('codec_type') == 'audio':
+                    ha_audio, canali_audio = True, s.get('channels', 2)
 
         estensione_output = ".mkv" if file_path.suffix.lower() == ".mkv" else ".mp4"
         if estensione_output == ".mkv":
@@ -106,13 +104,10 @@ class AppController:
             pref_audio_codec = self.settings.get("audio_codec_mp4")
 
         target_lufs = float(self.settings.get("target_lufs"))
-
         needs_video = codec_v not in ['hevc', 'h265']
         if pref_video_codec == "copy": needs_video = False
-
         needs_audio = ha_audio and pref_audio_codec != "copy"
         lufs_measured = metadata.get("measured_lufs") if metadata else None
-
         needs_audio_analysis = needs_audio and lufs_measured is None
 
         if needs_audio and lufs_measured is not None:
@@ -127,7 +122,7 @@ class AppController:
             self.audio_queue.add_task(sort_key=sort_key, file_path=file_path, file_info=metadata,
                                       delay_seconds=delay_seconds)
         elif needs_video:
-            status = "pending"  # <-- FIX: Prima era 'analyzed_waiting', causava il flash cromatico errato!
+            status = "pending"
             if metadata and metadata.get("measured_lufs") is None: metadata["measured_lufs"] = -24.0
             self.video_queue.add_task(sort_key=sort_key, file_path=file_path, file_info=metadata,
                                       delay_seconds=delay_seconds)
@@ -164,7 +159,6 @@ class AppController:
             del self.metrics["cores"][core_name]
         elif not is_core and core_name in self.metrics["cores"] and sub_name in self.metrics["cores"][core_name]:
             del self.metrics["cores"][core_name][sub_name]
-
         for wid, task_file in self.current_tasks.items():
             if task_file:
                 tf = Path(task_file)
@@ -185,7 +179,9 @@ class AppController:
         tot_vid_dur = 0.0
         ui_order = {}
 
-        # Memoria persistente degli stati per evitare "rimbalzi" (debounce nativo)
+        now = time.time()
+        need_delayed_retrigger = False
+
         if not hasattr(self, 'folder_global_states'):
             self.folder_global_states = {}
 
@@ -196,13 +192,23 @@ class AppController:
                 c_done = 0
                 c_skip = 0
                 c_err = 0
+                c_aud = 0
                 f_size_total = 0
+                valid_size = 0
+
+                count_meta = 0
+                count_v_codec = 0
+                count_a_codec = 0
+                count_vol = 0
 
                 for f_name, f_data in data.get("files", {}).items():
-                    f_size_total += f_data.get("size", 0)
+                    f_size = f_data.get("size", 0)
+                    f_size_total += f_size
                     st = f_data.get("status", "")
 
-                    # Conteggio esatto per la logica di coda suggerita
+                    if st != "error":
+                        valid_size += f_size
+
                     if st in ("analyzing", "converting", "normalizing"):
                         c_active += 1
                     elif st in ("init", "pending", "analyzed_waiting"):
@@ -213,6 +219,22 @@ class AppController:
                         c_skip += 1
                     elif st == "error":
                         c_err += 1
+
+                    if st == "analyzed_waiting":
+                        c_aud += 1
+
+                    # Calcolo Metriche Specifiche (Il VERO 100%)
+                    if st.startswith("completed") or st == "skipped":
+                        count_meta += 1
+                        count_v_codec += 1
+                        count_a_codec += 1
+                        count_vol += 1
+                    elif "meta" in f_data and f_data["meta"]:
+                        meta = f_data["meta"]
+                        count_meta += 1
+                        if meta.get("v_opt"): count_v_codec += 1
+                        if meta.get("a_opt"): count_a_codec += 1
+                        if meta.get("lufs_opt"): count_vol += 1
 
                 data["folder_size"] = f_size_total
                 tot_files += data.get("total_files", 0)
@@ -226,12 +248,40 @@ class AppController:
                 data["completed"] = c_done
                 data["skipped"] = c_skip
                 data["errors"] = c_err
+                data["c_aud"] = c_aud
+                data["valid_size"] = valid_size
+                data["is_processing"] = c_active > 0
 
                 total_items = data.get("total_files", 0)
+
+                data["count_meta"] = count_meta
+                data["count_v_codec"] = count_v_codec
+                data["count_a_codec"] = count_a_codec
+                data["count_vol"] = count_vol
+
+                p_meta = (count_meta / total_items * 100) if total_items > 0 else 0
+                p_v_codec = (count_v_codec / total_items * 100) if total_items > 0 else 0
+                p_a_codec = (count_a_codec / total_items * 100) if total_items > 0 else 0
+                p_vol = (count_vol / total_items * 100) if total_items > 0 else 0
+
+                data["p_meta"] = p_meta
+                data["p_v_codec"] = p_v_codec
+                data["p_a_codec"] = p_a_codec
+                data["p_vol"] = p_vol
+                data["p_global"] = (p_meta + p_v_codec + p_a_codec + p_vol) / 4
+
                 is_all_finished = (total_items > 0 and (c_done + c_skip + c_err) == total_items)
 
-                # --- NUOVA LOGICA: STATO BASATO SULLE CODE ---
+                # STATO IBRIDO: CODE + TIMER
                 prev_state = self.folder_global_states.get(sub_name, "In Attesa")
+
+                if c_active > 0:
+                    self.folder_active_timers[sub_name] = now
+
+                last_active = self.folder_active_timers.get(sub_name, 0)
+                time_since_active = now - last_active
+                is_within_grace_period = (time_since_active < 3.0)
+
                 new_state = prev_state
 
                 if total_items > 0 and str(sub_name) in self.excluded_targets:
@@ -239,22 +289,18 @@ class AppController:
                 elif is_all_finished:
                     new_state = "Completato"
                 elif c_active > 0:
-                    # Almeno un file in lavorazione -> in esecuzione sicura
                     new_state = "In Esecuzione"
                 elif c_in_queue > 0:
-                    # Non ci sono file in lavorazione, ma la cartella ha file pendenti
-                    if prev_state == "In Esecuzione":
-                        # Era già attiva: sta solo cedendo il passo tra un file e l'altro -> MANTIENI ESECUZIONE
+                    if prev_state == "In Esecuzione" and is_within_grace_period:
                         new_state = "In Esecuzione"
+                        need_delayed_retrigger = True
                     else:
-                        # Non è ancora mai partita per questa sessione
                         new_state = "In Attesa"
                 else:
                     new_state = "In Attesa"
 
                 self.folder_global_states[sub_name] = new_state
                 data["status"] = new_state
-                # ----------------------------------------------
 
             def sort_func(item):
                 sub_n, d = item
@@ -271,7 +317,14 @@ class AppController:
 
             ui_order[core_name] = [k for k, v in sorted(subfolders.items(), key=sort_func)]
 
-        # Salvataggio metriche per invio al websocket
+        if need_delayed_retrigger:
+            with self.retrigger_lock:
+                if self.retrigger_timer:
+                    self.retrigger_timer.cancel()
+                self.retrigger_timer = threading.Timer(0.5, self._trigger_metrics)
+                self.retrigger_timer.daemon = True
+                self.retrigger_timer.start()
+
         self.metrics["global"]["total_files"] = tot_files
         self.metrics["global"]["completed"] = tot_completed
         self.metrics["global"]["skipped"] = tot_skipped
@@ -341,6 +394,9 @@ class AppController:
             file_path = Path(task.file_path)
             self.current_tasks[worker_id] = str(file_path)
             core_name, sub_name, sub_data = self._get_target_context(file_path)
+
+            operazione_completata = False
+
             try:
                 if sub_data and file_path.name in sub_data.get("files", {}):
                     sub_data["files"][file_path.name]["status"] = "analyzing"
@@ -348,11 +404,10 @@ class AppController:
                 info = task.file_info
                 duration = float(info.get('format', {}).get('duration', 0.0)) if info else 0.0
                 for audio_prog in self._measure_lufs(file_path, duration, engine):
-                    if sub_data and file_path.name in sub_data["files"]: sub_data["files"][file_path.name][
-                        "progress"] = audio_prog
-                    if self.on_progress_update: self.on_progress_update(worker_id, file_path.name, "audio", audio_prog,
-                                                                        0.0, 0.0)
-
+                    if sub_data and file_path.name in sub_data["files"]:
+                        sub_data["files"][file_path.name]["progress"] = audio_prog
+                    if self.on_progress_update:
+                        self.on_progress_update(worker_id, file_path.name, "audio", audio_prog, 0.0, 0.0)
                 task.file_info["measured_lufs"] = getattr(engine, 'last_lufs_result', None)
                 if task.file_info["measured_lufs"] is not None:
                     self.db.save_cached_metadata(file_path, task.file_info)
@@ -369,16 +424,23 @@ class AppController:
                         sub_data["files"][file_path.name]["progress"] = 0.0
                     self.audio_queue.add_task(task.sort_key, task.file_path, task.file_info)
             else:
+                operazione_completata = True
+
+            self._trigger_metrics()
+
+            # Pausa visiva 2s per completamento animazione 100%
+            for _ in range(4):
+                if not self.is_running or self.is_scanning_aborted: break
+                time.sleep(0.5)
+
+            if operazione_completata:
                 if sub_data: sub_data["audio_processed_duration"] += duration
                 status = self._route_task(core_name, sub_name, file_path, task.file_info, delay_seconds=0)
                 if sub_data and file_path.name in sub_data["files"]:
                     sub_data["files"][file_path.name]["status"] = status
                     sub_data["files"][file_path.name]["progress"] = 0.0
+                self._trigger_metrics()
 
-            self._trigger_metrics()
-            for _ in range(2):
-                if not self.is_running or self.is_scanning_aborted: break
-                time.sleep(0.5)
             self.current_tasks[worker_id] = None
 
     def _video_worker_loop(self, worker_id):
@@ -395,46 +457,40 @@ class AppController:
             file_path = Path(task.file_path)
             self.current_tasks[worker_id] = str(file_path)
             core_name, sub_name, sub_data = self._get_target_context(file_path)
-
             out_file = None
+            operazione_completata = False
+
             try:
                 info = task.file_info
                 target_lufs = float(self.settings.get("target_lufs"))
                 pref_preset = self.settings.get("preset")
                 estensione_output = ".mkv" if file_path.suffix.lower() == ".mkv" else ".mp4"
-
                 if estensione_output == ".mkv":
                     pref_video_codec = self.settings.get("video_codec_mkv")
                     pref_audio_codec = self.settings.get("audio_codec_mkv")
                 else:
                     pref_video_codec = self.settings.get("video_codec_mp4")
                     pref_audio_codec = self.settings.get("audio_codec_mp4")
-
                 ha_audio, canali_audio = False, 2
                 codec_v = "sconosciuto"
                 for s in info.get('streams', []):
-                    if s.get('codec_type') == 'video' and codec_v == "sconosciuto": codec_v = s.get('codec_name',
-                                                                                                    'sconosciuto').lower()
-                    if s.get('codec_type') == 'audio': ha_audio, canali_audio = True, s.get('channels', 2)
-
+                    if s.get('codec_type') == 'video' and codec_v == "sconosciuto":
+                        codec_v = s.get('codec_name', 'sconosciuto').lower()
+                    if s.get('codec_type') == 'audio':
+                        ha_audio, canali_audio = True, s.get('channels', 2)
                 duration = float(info.get('format', {}).get('duration', 0.0)) if info else 0.0
-
                 if sub_data and file_path.name in sub_data.get("files", {}):
                     sub_data["files"][file_path.name]["status"] = "converting"
                     sub_data["files"][file_path.name]["progress"] = 0.0
                     self._trigger_metrics()
-
                 out_file = file_path.with_name(f"{file_path.stem}_converted{estensione_output}")
                 cmd = ['ffmpeg', '-y', '-i', str(file_path), '-map', '0']
-
                 cmd.extend(['-c:v', pref_video_codec, '-preset', pref_preset, '-cq', '25'])
-
                 needs_audio = ha_audio and pref_audio_codec != "copy"
                 if needs_audio:
                     lufs_measured = task.file_info.get("measured_lufs")
                     if lufs_measured is not None and abs(lufs_measured - target_lufs) <= 1.0:
                         needs_audio = False
-
                 if needs_audio:
                     lufs_measured = task.file_info.get("measured_lufs", -24.0)
                     bitrate_a = "256k" if canali_audio > 2 else "128k" if "opus" in pref_audio_codec else "384k" if canali_audio > 2 else "160k"
@@ -442,16 +498,13 @@ class AppController:
                                 pref_audio_codec, '-b:a', bitrate_a])
                 else:
                     cmd.extend(['-c:a', 'copy'])
-
                 cmd.extend(['-c:s', 'copy', '-progress', '-', '-nostats', str(out_file)])
-
                 op_label = "video_audio" if needs_audio else "video"
                 for progress in engine.run_conversion(cmd, duration):
-                    if sub_data and file_path.name in sub_data["files"]: sub_data["files"][file_path.name][
-                        "progress"] = progress
-                    if self.on_progress_update: self.on_progress_update(worker_id, file_path.name, op_label, progress,
-                                                                        0.0, 0.0)
-
+                    if sub_data and file_path.name in sub_data["files"]:
+                        sub_data["files"][file_path.name]["progress"] = progress
+                    if self.on_progress_update:
+                        self.on_progress_update(worker_id, file_path.name, op_label, progress, 0.0, 0.0)
             except Exception as e:
                 pass
 
@@ -471,10 +524,7 @@ class AppController:
                                               video_codec=pref_video_codec)
                     if dim_finale < dim_originale:
                         self.metrics["global"]["saved_space"] += (dim_originale - dim_finale)
-
-                    if sub_data:
-                        sub_data["video_processed_duration"] += duration
-                        if file_path.name in sub_data["files"]: sub_data["files"][file_path.name]["status"] = "completed_video"
+                    operazione_completata = True
                 except Exception:
                     if sub_data:
                         sub_data["video_processed_duration"] += duration
@@ -486,9 +536,17 @@ class AppController:
                     if file_path.name in sub_data["files"]: sub_data["files"][file_path.name]["status"] = "error"
 
             self._trigger_metrics()
+
             for _ in range(4):
                 if not self.is_running or self.is_scanning_aborted: break
                 time.sleep(0.5)
+
+            if operazione_completata and sub_data:
+                sub_data["video_processed_duration"] += duration
+                if file_path.name in sub_data["files"]:
+                    sub_data["files"][file_path.name]["status"] = "completed_video"
+                self._trigger_metrics()
+
             self.current_tasks[worker_id] = None
 
     def _norm_worker_loop(self, worker_id):
@@ -506,8 +564,9 @@ class AppController:
             file_path = Path(task.file_path)
             self.current_tasks[worker_id] = str(file_path)
             core_name, sub_name, sub_data = self._get_target_context(file_path)
-
             out_file = None
+            operazione_completata = False
+
             try:
                 info = task.file_info
                 target_lufs = float(self.settings.get("target_lufs"))
@@ -517,11 +576,9 @@ class AppController:
                     pref_audio_codec = self.settings.get("audio_codec_mkv")
                 else:
                     pref_audio_codec = self.settings.get("audio_codec_mp4")
-
                 canali_audio = 2
                 for s in info.get('streams', []):
                     if s.get('codec_type') == 'audio': canali_audio = s.get('channels', 2)
-
                 duration = float(info.get('format', {}).get('duration', 0.0)) if info else 0.0
 
                 if sub_data and file_path.name in sub_data.get("files", {}):
@@ -532,7 +589,6 @@ class AppController:
                 out_file = file_path.with_name(f"{file_path.stem}_normalized{estensione_output}")
                 cmd = ['ffmpeg', '-y', '-i', str(file_path), '-map', '0']
                 cmd.extend(['-c:v', 'copy'])
-
                 lufs_measured = task.file_info.get("measured_lufs", -24.0)
                 bitrate_a = "256k" if canali_audio > 2 else "128k" if "opus" in pref_audio_codec else "384k" if canali_audio > 2 else "160k"
                 cmd.extend(['-af', f'loudnorm=I={target_lufs}:TP=-1.5:LRA=11:measured_I={lufs_measured}', '-c:a',
@@ -540,11 +596,10 @@ class AppController:
                 cmd.extend(['-c:s', 'copy', '-progress', '-', '-nostats', str(out_file)])
 
                 for progress in engine.run_conversion(cmd, duration):
-                    if sub_data and file_path.name in sub_data["files"]: sub_data["files"][file_path.name][
-                        "progress"] = progress
-                    if self.on_progress_update: self.on_progress_update(worker_id, file_path.name, "audio_norm",
-                                                                        progress, 0.0, 0.0)
-
+                    if sub_data and file_path.name in sub_data["files"]:
+                        sub_data["files"][file_path.name]["progress"] = progress
+                    if self.on_progress_update:
+                        self.on_progress_update(worker_id, file_path.name, "audio_norm", progress, 0.0, 0.0)
             except Exception as e:
                 pass
 
@@ -559,15 +614,17 @@ class AppController:
                 dim_finale = out_file.stat().st_size
                 try:
                     os.remove(file_path)
-                    shutil.move(str(out_file), str(file_path.with_suffix(estensione_output)))
-                    self.db.mark_as_processed(str(file_path.with_suffix(estensione_output)), dim_originale, dim_finale,
-                                              audio_lufs=target_lufs)
+                    final_path = file_path.with_suffix(estensione_output)
+                    shutil.move(str(out_file), str(final_path))
+
                     if dim_finale < dim_originale:
                         self.metrics["global"]["saved_space"] += (dim_originale - dim_finale)
 
-                    if sub_data:
-                        sub_data["video_processed_duration"] += duration
-                        if file_path.name in sub_data["files"]: sub_data["files"][file_path.name]["status"] = "completed_audio"
+                    # Azzeriamo il volume calcolato per forzare il ricontrollo
+                    task.file_info["measured_lufs"] = None
+                    self.db.save_cached_metadata(final_path, task.file_info)
+
+                    operazione_completata = True
                 except Exception:
                     if sub_data:
                         sub_data["video_processed_duration"] += duration
@@ -579,23 +636,45 @@ class AppController:
                     if file_path.name in sub_data["files"]: sub_data["files"][file_path.name]["status"] = "error"
 
             self._trigger_metrics()
+
+            # Pausa visiva per far ammirare l'animazione al 100% (Normalizzazione)
             for _ in range(4):
                 if not self.is_running or self.is_scanning_aborted: break
                 time.sleep(0.5)
+
+            if operazione_completata and sub_data:
+                sub_data["video_processed_duration"] += duration
+
+                # Se l'estensione è cambiata, rimuoviamo il vecchio nome dalla RAM
+                if file_path.name != final_path.name and file_path.name in sub_data["files"]:
+                    del sub_data["files"][file_path.name]
+
+                # Re-inseriamo il file in RAM come "IN ATTESA" con volume N/A
+                sub_data["files"][final_path.name] = {
+                    "status": "pending",
+                    "progress": 0.0,
+                    "size": final_path.stat().st_size,
+                    "meta": self.scanner._build_meta_dict(final_path, task.file_info)
+                }
+
+                # Riassegniamo alla Coda Audio per innescare "L'Analisi di Verifica"
+                sort_key = (sub_data.get("folder_size", 0), sub_name, final_path.stat().st_size)
+                self.audio_queue.add_task(sort_key=sort_key, file_path=final_path, file_info=task.file_info,
+                                          delay_seconds=0)
+
+                self._trigger_metrics()
+
             self.current_tasks[worker_id] = None
 
     def start(self):
         if self.is_running: return
         self.is_running = True
-
         t_audio = threading.Thread(target=self._audio_worker_loop, args=("audio_0",), daemon=True)
         self.workers.append(t_audio)
         t_audio.start()
-
         t_norm = threading.Thread(target=self._norm_worker_loop, args=("norm_0",), daemon=True)
         self.workers.append(t_norm)
         t_norm.start()
-
         for i in range(self.max_workers):
             t_video = threading.Thread(target=self._video_worker_loop, args=(f"video_{i + 1}",), daemon=True)
             self.workers.append(t_video)
@@ -644,6 +723,7 @@ class AppController:
             saved = self.db.get_total_saved_space()
         except:
             saved = 0
+
         self.metrics["global"] = {
             "total_files": 0, "completed": 0, "skipped": 0, "errors": 0, "saved_space": saved,
             "total_duration": 0.0, "audio_processed_duration": 0.0, "video_processed_duration": 0.0,

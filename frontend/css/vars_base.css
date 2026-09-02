@@ -1,8 +1,10 @@
+
 :root {
     --bg-main: #0B0B0E;
     --bg-panel: #15151A;
     --bg-card: #1C1C24;
     --bg-header: #252530;
+    
     --primary: #3B82F6;
     --primary-hover: #2563EB;
     --success: #10B981;
@@ -11,15 +13,37 @@
     --danger: #EF4444;
     --purple: #A855F7;
     --cyan: #06b6d4;
+
+    --color-accent: #6B7280;
+
     --text-main: #F3F4F6;
     --text-muted: #9CA3AF;
     --border: #2D2D3A;
+
+    /* NUOVE VARIABILI COLOR SYSTEM UI (Ottimizzate per Dark Theme) */
+    --f-attesa: #6B7280;       /* Grigio neutro per file in attesa */
+    --f-errore: #EF4444;       /* Rosso per file in errore */
+    --f-saltato: #059669;      /* Verde scuro smeraldo per file saltati */
+    --f-completato: #10B981;   /* Verde smeraldo chiaro per file completati */
+
+    --p-analisi: #D946EF;      /* Rosa violetto per Analisi Audio */
+    --p-conv-audio: #0EA5E9;   /* Azzurro per Conversione Audio */
+    --p-conv-video: #3B82F6;   /* Blu per Conversione Video */
+    --p-norm: #8B5CF6;         /* Viola per Normalizzazione */
+    --p-conv-av: linear-gradient(90deg, #0EA5E9, #3B82F6); /* Gradiente Conversione AV */
+
+    /* Colori Sfondo Cartella (Trasparenze ripristinate) */
+    --bg-folder-attesa: rgba(156, 163, 175, 0.05);
+    --bg-folder-esec: rgba(234, 179, 8, 0.10);
+    --bg-folder-comp: rgba(74, 222, 128, 0.05);
 }
-* {
+
+*, *::before, *::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
+
 body {
     font-family: 'Consolas', 'Courier New', monospace;
     background-color: var(--bg-main);
@@ -27,10 +51,12 @@ body {
     height: 100vh;
     overflow: hidden;
 }
+
 .app-container {
     display: flex;
     height: 100%;
 }
+
 .hidden {
     display: none !important;
 }
