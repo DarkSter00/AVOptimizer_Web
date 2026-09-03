@@ -197,7 +197,8 @@ async function stopAll() {
     await fetch(`${API_URL}/stop`, { method: "POST" });
     isPaused = true;
     if(canvasArea) canvasArea.innerHTML = "";
-    if(topNavbar) topNavbar.style.display = "none";
+    const canvasToolbar = document.getElementById("canvas-toolbar");
+    if(canvasToolbar) canvasToolbar.style.display = "none";
     coreList = []; fileEtaCache = {}; folderEtaCache = {}; expandedCards.clear(); userOpenedCards.clear();
     currentCoreIndex = -1;
     lastMetrics = null;

@@ -6,10 +6,14 @@ window.toggleCard = function(subPath, safeId) {
         expandedCards.add(subPath);
         userOpenedCards.add(subPath);
     }
-    if (lastMetrics) renderCanvas(lastMetrics);
+    if (lastMetrics) window.processRenderLogic(lastMetrics);
 }
 
-function renderCanvas(metrics) {
+window.isTransitioningCore = false;
+
+window.renderCanvas = function(metrics) {
+    if (window.isTransitioningCore) return;
+
     if (!metrics.cores) {
         if(uiLoadingOverlay) uiLoadingOverlay.classList.add("hidden");
         updateTutorialUI();
@@ -20,28 +24,62 @@ function renderCanvas(metrics) {
 
     if (JSON.stringify(coreList) !== JSON.stringify(newCoreList)) {
         const isNewCoreAdded = newCoreList.length > coreList.length;
-        coreList = newCoreList;
+        const isCoreRemoved = newCoreList.length < coreList.length;
 
-        if (coreList.length === 0) {
-            currentCoreIndex = -1;
+        let nextIndex = currentCoreIndex;
+
+        if (newCoreList.length === 0) {
+            nextIndex = -1;
         } else if (isNewCoreAdded) {
-            currentCoreIndex = coreList.length - 1; // Apre automaticamente il nuovo Core inserito
-        } else if (currentCoreIndex >= coreList.length || currentCoreIndex === -1) {
-            currentCoreIndex = 0;
+            nextIndex = newCoreList.length - 1;
+        } else if (isCoreRemoved) {
+            if (nextIndex >= newCoreList.length) {
+                nextIndex = newCoreList.length - 1;
+            }
         }
 
-        expandedCards.clear();
-        userOpenedCards.clear();
-        renderCoreDots();
-        updateTutorialUI();
+        window.isTransitioningCore = true;
+        const canvasWrapper = document.getElementById('canvas-scroll-wrapper');
+        if(canvasWrapper) canvasWrapper.classList.add('canvas-hidden');
+
+        setTimeout(() => {
+            coreList = newCoreList;
+            currentCoreIndex = nextIndex;
+            expandedCards.clear();
+            userOpenedCards.clear();
+            renderCoreDots();
+            updateTutorialUI();
+
+            window.isTransitioningCore = false;
+            window.processRenderLogic(metrics);
+
+            if(canvasWrapper) canvasWrapper.classList.remove('canvas-hidden');
+        }, 400);
+        return;
     }
+
+    window.processRenderLogic(metrics);
+}
+
+window.processRenderLogic = function(metrics) {
+    const topNavbar = document.getElementById("top-navbar");
+    const canvasToolbar = document.getElementById("canvas-toolbar");
+
+    if(topNavbar) topNavbar.style.display = "flex";
+
     if (currentCoreIndex === -1) {
-        if(topNavbar) topNavbar.style.display = "none";
+        if(canvasToolbar) canvasToolbar.style.display = "none";
         if(canvasArea) canvasArea.innerHTML = "";
         if(uiLoadingOverlay) uiLoadingOverlay.classList.add("hidden");
         return;
     }
+
     if(topNavbar) topNavbar.style.display = "flex";
+    if(canvasToolbar) {
+        canvasToolbar.style.display = "flex";
+        document.getElementById('canvas-toolbar-title').textContent = coreList[currentCoreIndex].split(/[\\/]/).pop();
+    }
+
     const activeCoreName = coreList[currentCoreIndex];
     const subfolders = metrics.cores[activeCoreName];
     const subfolderKeys = (metrics.ui_order && metrics.ui_order[activeCoreName]) ? metrics.ui_order[activeCoreName] : Object.keys(subfolders);
@@ -51,13 +89,16 @@ function renderCanvas(metrics) {
             canvasArea.innerHTML = '<div class="masonry-col" id="col-0"></div><div class="masonry-col" id="col-1"></div>';
         }
     }
+
     const col0 = document.getElementById('col-0');
     const col1 = document.getElementById('col-1');
+
     if (col0 && col1) {
         Array.from(col0.children).concat(Array.from(col1.children)).forEach(el => {
             if (el.classList.contains("subfolder-card") && !subfolderKeys.includes(el.dataset.rawPath)) el.remove();
         });
     }
+
     if (!isBuildingCanvas) {
         subfolderKeys.forEach((key, index) => {
             const targetCol = index % 2 === 0 ? col0 : col1;
@@ -76,7 +117,9 @@ function renderCanvas(metrics) {
             }
         });
     }
+
     const keysToCreate = subfolderKeys.filter(k => !document.getElementById(getSafeId(k)));
+
     if (keysToCreate.length > 15 && !isBuildingCanvas) {
         isBuildingCanvas = true;
         if(uiLoadingOverlay) uiLoadingOverlay.classList.remove("hidden");
@@ -94,13 +137,14 @@ function renderCanvas(metrics) {
                 let pct = (idx / keysToCreate.length) * 100;
                 if(uiBuilderBg) uiBuilderBg.style.width = `${pct > 100 ? 100 : pct}%`;
                 if(uiLoadingText) uiLoadingText.textContent = `${Math.floor(pct > 100 ? 100 : pct)}%`;
+
                 if (idx < keysToCreate.length) requestAnimationFrame(buildChunk);
                 else {
                     isBuildingCanvas = false;
                     if(uiLoadingOverlay) uiLoadingOverlay.classList.add("hidden");
                     const oldKeys = subfolderKeys.filter(k => !keysToCreate.includes(k));
                     oldKeys.forEach(subPath => updateCardData(subPath, subfolders[subPath], getSafeId(subPath)));
-                    if (lastMetrics) requestAnimationFrame(() => renderCanvas(lastMetrics));
+                    if (lastMetrics) requestAnimationFrame(() => window.processRenderLogic(lastMetrics));
                 }
             });
         });
@@ -118,7 +162,6 @@ function renderCanvas(metrics) {
 function createCardDOM(subPath, activeCoreName, targetContainer) {
     const safeId = getSafeId(subPath);
     if (document.getElementById(safeId)) return;
-
     let card = document.createElement("div");
     card.className = "subfolder-card";
     card.id = safeId;
@@ -132,7 +175,6 @@ function createCardDOM(subPath, activeCoreName, targetContainer) {
     card.innerHTML = `
         <div class="ring-main" id="ring-main-${safeId}"></div>
         
-        <!-- Nuovo Overlay Centrale di Stato -->
         <div class="card-status-overlay" id="overlay-${safeId}">
             <i class="card-status-icon" id="overlay-icon-${safeId}"></i>
             <div class="card-status-title" id="overlay-title-${safeId}"></div>
@@ -166,14 +208,10 @@ function updateCardData(subPath, subData, safeId) {
     const card = document.getElementById(safeId);
     if (!card) return;
 
-    // Verifica se è il primissimo aggiornamento visivo della card
     const isFirstUpdate = !card.dataset.initialized;
-
-    // Ferma l'aggiornamento visivo se è in corso un'animazione Overlay manuale
     const isAnimatingExclusion = card.dataset.isAnimatingExclusion === "true";
 
     const badgeEl = document.getElementById(`badge-${safeId}`);
-    const fEta = document.getElementById(`footer-eta-${safeId}`);
     const animatorEl = document.getElementById(`animator-${safeId}`);
     const gridEl = document.getElementById(`grid-${safeId}`);
     const btnExclude = document.getElementById(`btn-exclude-${safeId}`);
@@ -186,31 +224,20 @@ function updateCardData(subPath, subData, safeId) {
     let validSize = subData.valid_size || 0;
     let is_processing = subData.is_processing || false;
     let totalProcessed = c_comp + c_err + c_skip;
-
     let isEsclusa = (subData.status === "Esclusa");
     let isCompletato = (subData.status === "Completato");
     let isCompletando = (subData.status === "Completando...");
     let is_visually_processing = (subData.status === "In Esecuzione");
 
-    // Helper intelligente per innescare l'animazione Elastica unicamente al cambio del testo
     const updateBadgeText = (text) => {
         if (!badgeEl) return;
-
-        // Ripuliamo eventuali vecchi inline-styles per far regnare i colori dinamici del CSS
-        badgeEl.style.backgroundColor = "";
-        badgeEl.style.borderColor = "";
-        badgeEl.style.color = "";
-        badgeEl.style.boxShadow = "";
-
+        badgeEl.style.backgroundColor = ""; badgeEl.style.borderColor = "";
+        badgeEl.style.color = ""; badgeEl.style.boxShadow = "";
         if (badgeEl.textContent !== text) {
             badgeEl.textContent = text;
             badgeEl.classList.remove('status-bounce');
-            void badgeEl.offsetWidth; // Forza il browser a registrare il reset
-
-            // Applica il rimbalzo SOLO se la cartella era già presente sullo schermo (non al primo caricamento)
-            if (!isFirstUpdate) {
-                badgeEl.classList.add('status-bounce');
-            }
+            void badgeEl.offsetWidth;
+            if (!isFirstUpdate) badgeEl.classList.add('status-bounce');
         }
     };
 
@@ -218,7 +245,6 @@ function updateCardData(subPath, subData, safeId) {
     const overlayIcon = document.getElementById(`overlay-icon-${safeId}`);
     const overlayTitle = document.getElementById(`overlay-title-${safeId}`);
 
-    // Esegue i cambiamenti visivi solo se non interferisce con l'Overlay utente manuale
     if (!isAnimatingExclusion) {
         if (btnExclude) {
             const iconContainer = document.getElementById(`btn-exclude-icon-${safeId}`);
@@ -235,7 +261,6 @@ function updateCardData(subPath, subData, safeId) {
             }
         }
 
-        // Smistamento Stati Principale
         if (isCompletando) {
             card.classList.remove("active-execution", "folder-excluded", "folder-completed");
             card.classList.add("folder-completando");
@@ -253,19 +278,16 @@ function updateCardData(subPath, subData, safeId) {
             updateBadgeText("ESCLUSA");
             if(overlay) overlay.classList.remove("active");
             if (!userOpenedCards.has(subPath)) expandedCards.delete(subPath);
-
         } else if (isCompletato) {
             card.classList.remove("active-execution", "folder-excluded", "folder-completando");
             card.classList.add("folder-completed");
             updateBadgeText("COMPLETATO");
             if(overlay) overlay.classList.remove("active");
-
             if (!userOpenedCards.has(subPath) && expandedCards.has(subPath)) {
                 if (!folderCloseTimers[subPath]) {
-                    folderCloseTimers[subPath] = setTimeout(() => { expandedCards.delete(subPath); delete folderCloseTimers[subPath]; if (lastMetrics) renderCanvas(lastMetrics); }, 2000);
+                    folderCloseTimers[subPath] = setTimeout(() => { expandedCards.delete(subPath); delete folderCloseTimers[subPath]; if (lastMetrics) window.processRenderLogic(lastMetrics); }, 2000);
                 }
             } else if (!expandedCards.has(subPath)) { if (folderCloseTimers[subPath]) { clearTimeout(folderCloseTimers[subPath]); delete folderCloseTimers[subPath]; } }
-
         } else if (is_visually_processing) {
             card.classList.remove("folder-completed", "folder-excluded", "folder-completando");
             card.classList.add("active-execution");
@@ -273,24 +295,20 @@ function updateCardData(subPath, subData, safeId) {
             if(overlay) overlay.classList.remove("active");
             expandedCards.add(subPath);
             if (folderCloseTimers[subPath]) { clearTimeout(folderCloseTimers[subPath]); delete folderCloseTimers[subPath]; }
-
         } else {
             card.classList.remove("active-execution", "folder-completed", "folder-excluded", "folder-completando");
             updateBadgeText("IN ATTESA");
             if(overlay) overlay.classList.remove("active");
-
             if (!userOpenedCards.has(subPath) && expandedCards.has(subPath)) {
                 if (!folderCloseTimers[subPath]) {
-                    folderCloseTimers[subPath] = setTimeout(() => { expandedCards.delete(subPath); delete folderCloseTimers[subPath]; if (lastMetrics) renderCanvas(lastMetrics); }, 2000);
+                    folderCloseTimers[subPath] = setTimeout(() => { expandedCards.delete(subPath); delete folderCloseTimers[subPath]; if (lastMetrics) window.processRenderLogic(lastMetrics); }, 2000);
                 }
             }
         }
     }
 
-    let pMeta = subData.p_meta || 0;
-    let pVideo = subData.p_v_codec || 0;
-    let pAudio = subData.p_a_codec || 0;
-    let pVol = subData.p_vol || 0;
+    let pMeta = subData.p_meta || 0; let pVideo = subData.p_v_codec || 0;
+    let pAudio = subData.p_a_codec || 0; let pVol = subData.p_vol || 0;
     let displayPct = subData.p_global || 0;
 
     if (isCompletato || isEsclusa) displayPct = 100.0;
@@ -332,12 +350,8 @@ function updateCardData(subPath, subData, safeId) {
 
     if (window.updateLeftFooterData) window.updateLeftFooterData(safeId, subData, c_comp, c_skip, c_aud, c_err);
     if (window.updateRightFooterData) window.updateRightFooterData(safeId, pMeta, pVideo, pAudio, pVol, displayPct, totalProcessed, c_tot, validSize);
-
     if (animatorEl) { if (expandedCards.has(subPath)) animatorEl.classList.add("open"); else animatorEl.classList.remove("open"); }
     if (expandedCards.has(subPath)) { renderFileBoxes(gridEl, subData.files); }
 
-    // Al termine di tutte le operazioni iniziali, blocca il flag in modo che i successivi update possano rimbalzare
-    if (isFirstUpdate) {
-        card.dataset.initialized = "true";
-    }
+    if (isFirstUpdate) card.dataset.initialized = "true";
 }

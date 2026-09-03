@@ -81,35 +81,33 @@ if (scannerWidget) {
     });
 }
 
-// --- LISTENERS BASE PER IL MENU LATERALE ---
+// --- ESPANSIONE NOTIFICA INFERIORE ---
+if (scannerWidget) {
+    scannerWidget.addEventListener('click', () => {
+        scannerWidget.classList.toggle('expanded');
+    });
+}
+
+// --- LISTENERS BASE PER IL MENU LATERALE E PANNELLI ---
+const btnMobileMenu = document.getElementById("btn-mobile-menu");
+const mobileOverlay = document.getElementById("mobile-overlay");
+const sidebar = document.querySelector(".sidebar");
+
 if(btnMobileMenu) btnMobileMenu.addEventListener("click", () => {
     sidebar.classList.add("open");
     mobileOverlay.classList.add("active");
-    btnMobileMenu.classList.add("hidden-by-sidebar");
 });
 
 if(mobileOverlay) mobileOverlay.addEventListener("click", () => {
     sidebar.classList.remove("open");
     mobileOverlay.classList.remove("active");
-    btnMobileMenu.classList.remove("hidden-by-sidebar");
 });
-
-if(document.getElementById("btn-add-folder"))
-    document.getElementById("btn-add-folder").addEventListener("click", () => {
-        window.addFolder();
-        sidebar.classList.remove("open");
-        mobileOverlay.classList.remove("active");
-        btnMobileMenu.classList.remove("hidden-by-sidebar");
-    });
 
 if(document.getElementById("btn-stop"))
     document.getElementById("btn-stop").addEventListener("click", window.stopAll);
 
 if(document.getElementById("btn-toggle-play"))
     document.getElementById("btn-toggle-play").addEventListener("click", window.togglePlayPause);
-
-if(document.getElementById("btn-delete-core"))
-    document.getElementById("btn-delete-core").addEventListener("click", window.deleteActiveCore);
 
 if(document.getElementById("btn-db-viewer"))
     document.getElementById("btn-db-viewer").addEventListener("click", window.openDbViewer);

@@ -1,13 +1,69 @@
+window.confirmTimers = {};
+
+window.handleTopAction = function(btnId, actionType) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+
+    if (btn.classList.contains('confirm-state')) {
+        btn.classList.remove('confirm-state');
+        if (actionType === 'add-folder') window.addFolder();
+        if (actionType === 'delete-core') window.deleteActiveCore();
+        if (actionType === 'reset-all') window.resetAllConfirm();
+    } else {
+        btn.classList.add('confirm-state');
+    }
+}
+
+window.handleBtnLeave = function(btn) {
+    // ESTREMA TOLLERANZA: Aspetta più di 1 secondo prima di far scomparire il "Sicuro?" via JS
+    window.confirmTimers[btn.id] = setTimeout(() => {
+        btn.classList.remove('confirm-state');
+    }, 1200);
+}
+
+window.handleBtnEnter = function(btn) {
+    clearTimeout(window.confirmTimers[btn.id]);
+}
+
+window.resetAllConfirm = async function() {
+    try {
+        await fetch(`${API_URL}/stop`, { method: "POST" });
+        window.stopAll();
+    } catch(e) {}
+}
+
+window.changeCoreWithAnimation = function(newIndex) {
+    if (currentCoreIndex !== newIndex && newIndex >= 0 && newIndex < coreList.length) {
+        if (window.isTransitioningCore) return;
+        window.isTransitioningCore = true;
+
+        currentCoreIndex = newIndex;
+        renderCoreDots();
+
+        const canvasWrapper = document.getElementById('canvas-scroll-wrapper');
+        if(canvasWrapper) canvasWrapper.classList.add('canvas-hidden');
+
+        setTimeout(() => {
+            expandedCards.clear(); userOpenedCards.clear();
+            if (lastMetrics) window.processRenderLogic(lastMetrics);
+
+            window.isTransitioningCore = false;
+            if(canvasWrapper) canvasWrapper.classList.remove('canvas-hidden');
+        }, 400);
+    }
+}
+
 function updateTutorialUI() {
+    const wrapAddFolder = document.getElementById("btn-add-folder-smart");
     if (coreList.length === 0) {
-        if(btnAddFolder) btnAddFolder.classList.add("pulse-primary");
+        if(wrapAddFolder) wrapAddFolder.classList.add("pulse-primary");
         if(btnTogglePlay) {
             btnTogglePlay.disabled = true;
             btnTogglePlay.className = "btn btn-secondary";
             btnTogglePlay.innerHTML = '<i class="fa-solid fa-play"></i> Avvia';
         }
     } else {
-        if(btnAddFolder) btnAddFolder.classList.remove("pulse-primary");
+        if(wrapAddFolder) wrapAddFolder.classList.remove("pulse-primary");
         if(btnTogglePlay) {
             btnTogglePlay.disabled = false;
             if (isPaused) {
@@ -94,13 +150,12 @@ function updateAllCoreStates() {
     const selector = document.getElementById("core-selector");
     if(!selector) return;
 
-    // Ignoriamo le pillole che stanno già affrontando l'animazione di uscita
     const existingPills = Array.from(selector.querySelectorAll('.core-pill:not(.animate-leave)'));
-    if (existingPills.length !== coreList.length) return; // Attende che renderCoreDots abbia sincronizzato il DOM
+    if (existingPills.length !== coreList.length) return;
 
     existingPills.forEach((pill, index) => {
         const corePath = coreList[index];
-        if (pill.dataset.corePath !== corePath) return; // Sicurezza aggiuntiva
+        if (pill.dataset.corePath !== corePath) return;
 
         const state = getCoreAggregatedState(corePath);
 
@@ -113,12 +168,7 @@ function updateAllCoreStates() {
         const currentClasses = pill.className;
         const newClassName = `core-pill ${stateClass}${isActive}`;
 
-        if (!currentClasses.includes(stateClass)) {
-            pill.className = newClassName;
-            pill.classList.remove('status-changed');
-            void pill.offsetWidth;
-            pill.classList.add('status-changed');
-        } else if (currentClasses !== newClassName) {
+        if (currentClasses !== newClassName) {
             pill.className = newClassName;
         }
 
@@ -134,7 +184,6 @@ function renderCoreDots() {
     if(!selector) return;
 
     if (coreList.length === 0) {
-        // Animazione di chiusura se svuotiamo del tutto
         const existing = Array.from(selector.querySelectorAll('.core-pill'));
         if (existing.length > 0) {
             existing.forEach(pill => pill.classList.add('animate-leave'));
@@ -162,7 +211,6 @@ function renderCoreDots() {
 
     const existingPills = Array.from(selector.querySelectorAll('.core-pill:not(.animate-leave)'));
 
-    // 1. GESTIONE RIMOZIONE (Uscita Animata)
     existingPills.forEach(pill => {
         if (!coreList.includes(pill.dataset.corePath)) {
             pill.classList.add('animate-leave');
@@ -172,7 +220,6 @@ function renderCoreDots() {
 
     let activeElement = null;
 
-    // 2. GESTIONE AGGIUNTA E AGGIORNAMENTO
     coreList.forEach((corePath, index) => {
         let pill = existingPills.find(p => p.dataset.corePath === corePath);
 
@@ -186,36 +233,21 @@ function renderCoreDots() {
         const newClassName = `core-pill ${stateClass}${isActive}`;
 
         if (!pill) {
-            // Nuova Pillola: Entra con Animazione
             pill = document.createElement("div");
             pill.dataset.corePath = corePath;
             pill.className = newClassName + " animate-enter";
             pill.innerHTML = `<i class="fa-solid fa-folder-tree"></i> <span>${corePath.split(/[\\/]/).pop()}</span> <i class="${iconClass}"></i>`;
 
-            pill.addEventListener("click", () => {
+            // Fix per evitare listener doppi (sovrascrive brutalmente .onclick)
+            pill.onclick = () => {
                 const currIdx = coreList.indexOf(pill.dataset.corePath);
-                if (currIdx !== -1 && currentCoreIndex !== currIdx) {
-                    currentCoreIndex = currIdx;
-                    expandedCards.clear();
-                    userOpenedCards.clear();
-                    renderCoreDots();
-                    if (lastMetrics) renderCanvas(lastMetrics);
-                }
-            });
+                window.changeCoreWithAnimation(currIdx);
+            };
         } else {
-            // Pillola Esistente: Aggiornamento dolce
             pill.classList.remove("animate-enter");
-            const currentClasses = pill.className;
-
-            if (!currentClasses.includes(stateClass)) {
-                pill.className = newClassName;
-                pill.classList.remove('status-changed');
-                void pill.offsetWidth;
-                pill.classList.add('status-changed');
-            } else if (currentClasses !== newClassName) {
+            if (pill.className !== newClassName) {
                 pill.className = newClassName;
             }
-
             const iconEl = pill.querySelector('.core-status-icon');
             if (iconEl && iconEl.className !== iconClass) {
                 iconEl.className = iconClass;
@@ -223,18 +255,14 @@ function renderCoreDots() {
         }
 
         if (index === currentCoreIndex) activeElement = pill;
-
-        // Mantieni sempre l'ordine corretto nel DOM (posiziona prima dello spacer finale)
         selector.insertBefore(pill, spacerR);
     });
 
-    // Auto-Centratura Assoluta
     if (activeElement) {
         setTimeout(() => {
             activeElement.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
         }, 100);
     }
-
     updateCoreScrollButtons();
 }
 
@@ -258,38 +286,25 @@ function updateCoreScrollButtons() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+    // Inizializzazione Pulsanti Scorrimento: sovrascriviamo rigidamente l'onclick per evitare salti doppi
     const selector = document.getElementById("core-selector");
     const btnPrev = document.getElementById("btn-core-prev");
     const btnNext = document.getElementById("btn-core-next");
 
     if (selector) {
-        selector.addEventListener("wheel", (e) => {
+        selector.onwheel = (e) => {
             if (selector.scrollWidth > selector.clientWidth) {
                 e.preventDefault();
                 selector.scrollBy({ left: Math.sign(e.deltaY) * 150, behavior: 'smooth' });
             }
-        }, { passive: false });
+        };
     }
 
     if (btnPrev) {
-        btnPrev.addEventListener("click", () => {
-            if (currentCoreIndex > 0) {
-                currentCoreIndex--;
-                expandedCards.clear(); userOpenedCards.clear();
-                renderCoreDots();
-                if (lastMetrics) renderCanvas(lastMetrics);
-            }
-        });
+        btnPrev.onclick = () => window.changeCoreWithAnimation(currentCoreIndex - 1);
     }
 
     if (btnNext) {
-        btnNext.addEventListener("click", () => {
-            if (currentCoreIndex < coreList.length - 1) {
-                currentCoreIndex++;
-                expandedCards.clear(); userOpenedCards.clear();
-                renderCoreDots();
-                if (lastMetrics) renderCanvas(lastMetrics);
-            }
-        });
+        btnNext.onclick = () => window.changeCoreWithAnimation(currentCoreIndex + 1);
     }
 });
