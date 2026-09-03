@@ -424,3 +424,54 @@
 .subfolder-card .footer-info > :nth-child(1) { animation-delay: 0.45s; }
 .subfolder-card .footer-info > :nth-child(2) { animation-delay: 0.50s; }
 .subfolder-card .footer-info > :nth-child(3) { animation-delay: 0.55s; }
+
+/* --- ACCENTI GIALLI E ANIMAZIONI PER CARTELLA IN ESECUZIONE --- */
+.subfolder-card.active-execution .card-inner {
+    background-color: rgba(245, 158, 11, 0.03) !important; /* Giallo super tenue */
+}
+
+.subfolder-card.active-execution .clickable-header-box {
+    border-color: var(--warning);
+    background-color: rgba(245, 158, 11, 0.08); /* Più opaco del precedente ma comunque tenue */
+    position: relative;
+    overflow: hidden;
+}
+
+/* Animazione Striscia di Caricamento tipo Windows (Indeterminate Progress) */
+.subfolder-card.active-execution .clickable-header-box::after {
+    content: "";
+    position: absolute;
+    top: 0; left: -100%; width: 50%; height: 100%;
+    /* Utilizza il giallo/warning ma molto tenue */
+    background: linear-gradient(90deg, transparent, var(--warning), transparent);
+    opacity: 0.15;
+    animation: indeterminateSweep 1.5s infinite linear;
+    pointer-events: none;
+}
+
+@keyframes indeterminateSweep {
+    0% { left: -100%; }
+    100% { left: 200%; }
+}
+
+/* Glow pulsante stato della cartella */
+.subfolder-card.active-execution .status-badge {
+    position: relative;
+    z-index: 1; /* Garantisce che il testo resti sopra */
+}
+
+.subfolder-card.active-execution .status-badge::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50px;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.8);
+    animation: pulseOpacityGlow 1.5s infinite alternate;
+    pointer-events: none;
+    z-index: -1;
+}
+
+@keyframes pulseOpacityGlow {
+    0% { opacity: 0.3; }
+    100% { opacity: 1; }
+}

@@ -15,11 +15,21 @@ function renderCanvas(metrics) {
         updateTutorialUI();
         return;
     }
+
     const newCoreList = Object.keys(metrics.cores);
+
     if (JSON.stringify(coreList) !== JSON.stringify(newCoreList)) {
+        const isNewCoreAdded = newCoreList.length > coreList.length;
         coreList = newCoreList;
-        if (coreList.length === 0) currentCoreIndex = -1;
-        else if (currentCoreIndex >= coreList.length || currentCoreIndex === -1) currentCoreIndex = 0;
+
+        if (coreList.length === 0) {
+            currentCoreIndex = -1;
+        } else if (isNewCoreAdded) {
+            currentCoreIndex = coreList.length - 1; // Apre automaticamente il nuovo Core inserito
+        } else if (currentCoreIndex >= coreList.length || currentCoreIndex === -1) {
+            currentCoreIndex = 0;
+        }
+
         expandedCards.clear();
         userOpenedCards.clear();
         renderCoreDots();

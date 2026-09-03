@@ -1,6 +1,7 @@
 function renderMorphContent(safeId, subData, category) {
     const content = document.getElementById(`morph-content-${safeId}`);
     if (!content) return;
+
     let itemsHtml = '<ul class="error-list" style="margin-top: 5px;">';
     let count = 0; let borderClass = ""; let bgItemClass = "";
 
@@ -8,16 +9,23 @@ function renderMorphContent(safeId, subData, category) {
     else if (category === 'completed') { borderClass = "var(--success)"; bgItemClass = "rgba(0,0,0,0.4)"; }
     else if (category === 'skipped') { borderClass = "var(--cyan)"; bgItemClass = "rgba(0,0,0,0.4)"; }
     else if (category === 'analyzed_waiting') { borderClass = "var(--purple)"; bgItemClass = "rgba(0,0,0,0.4)"; }
+    else if (category === 'pending') { borderClass = "var(--f-attesa)"; bgItemClass = "rgba(0,0,0,0.4)"; }
 
-    for (const [fname, state] of Object.entries(subData.files)) {
+    const sortedFiles = Object.entries(subData.files).sort((a, b) => a[0].localeCompare(b[0]));
+
+    for (const [fname, state] of sortedFiles) {
         let match = false;
-        if (category === 'completed' && state.status.startsWith('completed')) match = true; else if (state.status === category) match = true;
+        if (category === 'completed' && state.status.startsWith('completed')) match = true;
+        else if (category === 'pending' && (state.status === 'pending' || state.status === 'init')) match = true;
+        else if (state.status === category) match = true;
+
         if (match) {
             count++;
             itemsHtml += `<li class="error-item" style="background: ${bgItemClass}; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 5px; padding: 8px 12px; border-left-color: ${borderClass};"><span class="error-item-name" style="font-size:12px; color: #fff;">${fname}</span></li>`;
         }
     }
     itemsHtml += '</ul>';
+
     if (count === 0) itemsHtml = `<div style="text-align:center; padding: 15px; color: var(--text-muted); font-size: 13px;">Nessun file presente in questa categoria.</div>`;
     content.innerHTML = itemsHtml;
 }
@@ -25,6 +33,7 @@ function renderMorphContent(safeId, subData, category) {
 window.openModal = function(type) {
     const modal = document.getElementById("data-modal"); if (!modal) return;
     const modalTitle = document.getElementById("modal-title"); const modalBody = document.getElementById("modal-body");
+
     if (type === 'errors') {
         modalTitle.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Gestione Errori Globali Attuali';
         let html = `<p style="margin-bottom: 15px;">File andati in errore in tutte le cartelle:</p>`; let hasErrors = false; let errorListHtml = `<ul class="error-list">`;
@@ -43,7 +52,7 @@ window.openModal = function(type) {
         modalBody.innerHTML = html;
     } else { modalTitle.innerText = "Dettagli"; modalBody.innerHTML = "<p>Nessun dettaglio disponibile.</p>"; }
     modal.classList.remove("hidden");
-}
+};
 
 window.openFolderErrors = function(coreName, subName) {
     const modal = document.getElementById("data-modal"); const modalTitle = document.getElementById("modal-title"); const modalBody = document.getElementById("modal-body");
@@ -59,6 +68,40 @@ window.openFolderErrors = function(coreName, subName) {
     if (hasErrors) { html += errorListHtml; html += `<div style="margin-top:25px; text-align:right;"><button class="btn btn-warning pulse-warning" onclick="retryErrors()"><i class="fa-solid fa-rotate-right"></i> Riprova Tutti gli Errori Globali</button></div>`; }
     else { html = `<div style="text-align:center; padding: 30px;"><span style="font-size:40px">🎉</span><p style="color:var(--success); font-size: 16px; margin-top: 15px;">Nessun errore in questa cartella!</p></div>`; }
     modalBody.innerHTML = html; modal.classList.remove("hidden");
-}
+};
 
 window.closeModal = function() { const modal = document.getElementById("data-modal"); if (modal) modal.classList.add("hidden"); };
+
+window.updateLeftFooterData = function(safeId, subData, c_comp, c_skip, c_aud, c_err) {
+    const fOk = document.getElementById(`btn-comp-${safeId}`);
+    const fSkip = document.getElementById(`btn-skip-${safeId}`);
+    const fAud = document.getElementById(`btn-aud-${safeId}`);
+    const fErr = document.getElementById(`btn-err-${safeId}`);
+    const fPend = document.getElementById(`btn-pend-${safeId}`);
+
+    let c_pend = 0;
+    if (subData && subData.files) {
+        Object.values(subData.files).forEach(f => {
+            if (f.status === 'pending' || f.status === 'init') c_pend++;
+        });
+    }
+
+    if(fOk) { const c = fOk.querySelector('.tab-count'); if(c) c.textContent = c_comp; }
+    if(fSkip) { const c = fSkip.querySelector('.tab-count'); if(c) c.textContent = c_skip; }
+    if(fAud) { const c = fAud.querySelector('.tab-count'); if(c) c.textContent = c_aud; }
+    if(fErr) { const c = fErr.querySelector('.tab-count'); if(c) c.textContent = c_err; }
+    if(fPend) { const c = fPend.querySelector('.tab-count'); if(c) c.textContent = c_pend; }
+
+    if (openMorphsTracker[safeId]) {
+        window.renderMorphContent(safeId, subData, openMorphsTracker[safeId]);
+        const morph = document.getElementById(`morph-${safeId}`);
+        const spacer = document.getElementById(`spacer-${safeId}`);
+        const content = document.getElementById(`morph-content-${safeId}`);
+
+        if (morph && morph.classList.contains('expanded') && !content.classList.contains('switching')) {
+            const currentH = morph.style.height; morph.style.height = 'auto'; let newH = morph.scrollHeight;
+            if (newH < 80) newH = 80; if (newH > 400) newH = 400; morph.style.height = currentH;
+            if (currentH !== `${newH}px`) { void morph.offsetWidth; morph.style.height = `${newH}px`; if (spacer) spacer.style.height = `${newH + 20}px`; }
+        }
+    }
+};

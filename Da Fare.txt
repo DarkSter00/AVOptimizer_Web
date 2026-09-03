@@ -1,5 +1,3 @@
-- da migliorare la disposizioni delle informazioni all'interno del riquadro "espanso" del file e delle operazioni. in particolare la nuova operazione di normalizzazione audio azzurra. che tra l'altro credo di dover aggiungere alle possibili esecuzioni che si possono fare su un file. per comodità separiamo la normalizzazione dalla conversione, quindi bisogna fare delle modifiche anche nel backend. anche perché graficamente, il rettangolo di elaborazione passa dalla conversione gialla alla normalizzazione azzurra in mezzo secondo e si vede flashare un colore errato e sembra trattarsi di un bug del programma, quando in realtà è il sistema grafico (che tramite js) si accorge che quella specifica esecuzione di conversione in realtà non converte nulla, ma sta normalizzando, cambiando i colori subito dopo.
-
 - quando una cartella è stata esclusa è possibile includerla nuovamente, ma dato che la cartella esclusa ha tutti gli elementi scuriti, i pulsanti non si vedono, posso premerli, perché so che ci sono e cosa fanno, ma non riesco a vedereli bene (magari si può fare che se ci vado sopra (mentre sono esclusi) in hover con il cursore si schiarisce abbastanza da permettermi di vederla
 
 - sulla notifica in basso a sinistra della scansione iniziale è possibile cliccarci, ma attualmente è abbastanza inutile: allarga il rettangolo e basta, quindi dobbiamo differenziare l'interfaccia e la disposizione degli elementi. nella versione standard sarà tutto più compatto, cliccandoci sopra il rettangolo si allarga e si alza, gli elementi si spostano e ingrandiscono
@@ -13,3 +11,8 @@
 - creare delle nuove pagine web dedicate a: grafo struttura, impostazioni/log, visualizzare il db, completati, spazio liberato, saltati e errori.
 
 - tutti i pulsanti cliccabili/interagibili con hover del cursore si illumina leggermente proprio per far capire che è possibile interagirci
+
+- la pillala del menu sinistro del footer cartella dedicato ai file in attesa non ha una animazione di ingresso. inoltre quando ci sto sopra il cursore non cambia rimane la freccia standard a differenza di tutti gli altri pulsanti del progetto.
+
+- l'animazione di chiusura della cartella non esegue l'animazione di scomparsa con zoom dei file all'interno (opposta a quella in ingresso e in ordine (dall'ultima alla prima))
+

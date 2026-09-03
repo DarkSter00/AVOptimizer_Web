@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>A/V Optimizer v.8 Web</title>
   <link rel="stylesheet" href="style.css?v=35">
-  
   <!-- Font Awesome 6 -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
+
 <button id="btn-mobile-menu" class="btn-mobile-menu"><i class="fa-solid fa-bars"></i></button>
 <div id="mobile-overlay" class="mobile-overlay"></div>
 
@@ -52,9 +52,14 @@
           <span class="stat-value text-cyan" id="lbl-skipped">0</span>
           <span class="stat-label">Saltati</span>
         </div>
-        <div class="stat-box interactive" onclick="openModal('errors')" style="animation-delay: 0.3s;">
+        <div class="stat-box interactive" onclick="openModal('errors')" style="animation-delay: 0.25s;">
           <span class="stat-value text-danger" id="lbl-errors">0</span>
           <span class="stat-label">Errori</span>
+        </div>
+        <!-- Nuova Scatola: In Attesa con classi fixate -->
+        <div class="stat-box interactive" onclick="openModal('pending')" style="animation-delay: 0.3s;">
+          <span class="stat-value text-muted" id="lbl-pending">0</span>
+          <span class="stat-label">In Attesa</span>
         </div>
       </div>
     </div>
@@ -90,13 +95,18 @@
 
   <main class="main-content">
     <header class="top-navbar slide-down" id="top-navbar" style="display: none;">
-      <div class="core-selector" id="core-selector"></div>
-      <div>
+      <!-- Nuovo Wrapper con Scroll Laterale -->
+      <div class="core-selector-wrapper" id="core-selector-wrapper">
+        <button id="btn-core-prev" class="btn-core-scroll btn-hidden"><i class="fa-solid fa-chevron-left"></i></button>
+        <div class="core-selector" id="core-selector"></div>
+        <button id="btn-core-next" class="btn-core-scroll btn-hidden"><i class="fa-solid fa-chevron-right"></i></button>
+      </div>
+      <!-- Azioni a Destra -->
+      <div class="header-right-actions" style="flex-shrink: 0;">
         <button class="btn btn-secondary mr-2" onclick="openModal('graph')"><i class="fa-solid fa-sitemap"></i> Grafo Struttura</button>
         <button id="btn-delete-core" class="btn btn-outline-danger"><i class="fa-solid fa-trash"></i> Elimina Core</button>
       </div>
     </header>
-
     <div class="canvas-scroll-wrapper" id="canvas-scroll-wrapper">
       <div id="conavas-blocker" class="canvas-blocke hidden"></div>
       <div id="canvas-area" class="canvas-area"></div>
@@ -135,5 +145,6 @@
 <script src="js/ui_folder_header.js"></script>
 <script src="js/ui_folder_footer_left.js"></script>
 <script src="js/ui_folder_footer_right.js"></script>
+
 </body>
 </html>

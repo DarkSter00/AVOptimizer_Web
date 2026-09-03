@@ -5,6 +5,7 @@ import subprocess
 import threading
 import concurrent.futures
 from pathlib import Path
+import guessit
 
 
 class Scanner:
@@ -12,7 +13,28 @@ class Scanner:
         self.controller = controller
 
     def _build_meta_dict(self, file_path, info):
-        if not info: return None
+        # 1. Eseguiamo SEMPRE guessit sul nome del file, anche se mancano i metadati ffprobe
+        guess = guessit.guessit(str(file_path))
+        season = guess.get('season')
+        episode = guess.get('episode')
+        se_string = None
+
+        if season is not None and episode is not None:
+            se_string = f"S{season:02d} E{episode:02d}"
+        elif episode is not None:
+            se_string = f"Ep {episode:02d}"
+
+        # 2. Se mancano i metadati tecnici (file nel DB ma cache vuota), restituiamo un fallback sicuro per l'UI
+        if not info:
+            return {
+                "v_codec": "N/A", "v_opt": True,
+                "a_codec": "N/A", "a_opt": True,
+                "lufs": None, "lufs_opt": True,
+                "dur": 0.0,
+                "se_string": se_string
+            }
+
+        # 3. Estrazione normale per i file con metadati presenti
         v_codec = "N/A"
         a_codec = "N/A"
         for s in info.get('streams', []):
@@ -20,15 +42,17 @@ class Scanner:
                 v_codec = s.get('codec_name', 'N/A').lower()
             if s.get('codec_type') == 'audio':
                 a_codec = s.get('codec_name', 'N/A').lower()
+
         dur = float(info.get('format', {}).get('duration', 0.0))
         lufs = info.get('measured_lufs')
         target_lufs = float(self.controller.settings.get('target_lufs'))
-
         v_opt = v_codec in ['hevc', 'h265']
+
         pref_a = self.controller.settings.get(
             "audio_codec_mkv") if file_path.suffix.lower() == ".mkv" else self.controller.settings.get(
             "audio_codec_mp4")
         a_opt = (a_codec == pref_a) or pref_a == 'copy'
+
         lufs_opt = False
         if lufs is not None and abs(lufs - target_lufs) <= 1.0:
             lufs_opt = True
@@ -37,7 +61,8 @@ class Scanner:
             "v_codec": v_codec, "v_opt": v_opt,
             "a_codec": a_codec, "a_opt": a_opt,
             "lufs": lufs, "lufs_opt": lufs_opt,
-            "dur": dur
+            "dur": dur,
+            "se_string": se_string
         }
 
     def _extract_metadata(self, file_path):
@@ -146,16 +171,15 @@ class Scanner:
                 cached_meta = None if force_rescan else self.controller.db.get_cached_metadata(file_path)
 
                 if is_processed_db:
-                    meta_dict = self._build_meta_dict(file_path, cached_meta) if cached_meta else None
+                    # FIX: Rimosso l'if in linea. Ora _build_meta_dict viene SEMPRE chiamato.
+                    meta_dict = self._build_meta_dict(file_path, cached_meta)
                     self.controller.metrics["cores"][core_name][sub_name]["files"][file_path.name] = {
                         "status": "skipped", "progress": 100.0, "size": size, "meta": meta_dict}
                 elif cached_meta:
                     meta_dict = self._build_meta_dict(file_path, cached_meta)
                     status = self.controller._route_task(core_name, sub_name, file_path, cached_meta, delay_seconds)
-
                     self.controller.metrics["cores"][core_name][sub_name]["files"][file_path.name] = {
                         "status": status, "progress": 0.0, "size": size, "meta": meta_dict}
-
                     try:
                         duration = float(cached_meta.get('format', {}).get('duration', 0.0))
                         self.controller.metrics["cores"][core_name][sub_name]["total_duration"] += duration
