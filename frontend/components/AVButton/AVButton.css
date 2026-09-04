@@ -1,0 +1,137 @@
+/* frontend/components/AVButton/AVButton.css */
+
+.av-btn {
+    position: relative;
+    height: var(--av-h);
+    width: var(--av-h); /* Default: cerchio chiuso */
+    min-width: var(--av-h);
+    border-radius: var(--av-h);
+
+    border: 1px solid var(--av-btn-border);
+    background-color: var(--av-btn-bg);
+
+    cursor: pointer;
+    overflow: hidden;
+    flex-shrink: 0;
+    padding: 0;
+    display: block;
+
+    /* La transizione è controllata dalla variabile impostata nello Stato JS */
+    transition: width var(--av-transition) cubic-bezier(0.34, 1.5, 0.64, 1) 0s,
+    background-color var(--av-transition) ease,
+    border-color var(--av-transition) ease;
+}
+
+/* Espansione controllata dal JS */
+.av-btn.is-expanded {
+    width: var(--av-current-w);
+}
+
+/* --- CERCHIO ICONA ESTERNO --- */
+.av-btn__icon-wrapper {
+    position: absolute;
+    top: 0; bottom: 0; margin: auto;
+    width: var(--av-h);
+    height: var(--av-h);
+    display: flex; align-items: center; justify-content: center;
+    font-size: calc(var(--av-h) * 0.40);
+    color: var(--av-icon-color);
+    z-index: 5;
+    transition: color var(--av-transition) ease;
+}
+
+/* --- CONTENITORE TESTI --- */
+.av-btn__text-container {
+    position: absolute;
+    top: 0; bottom: 0;
+    opacity: 0;
+    transition: opacity 0.2s ease 0s;
+    z-index: 1;
+}
+
+.av-btn.is-expanded .av-btn__text-container {
+    opacity: 1;
+    transition-delay: 0.15s;
+}
+
+/* --- LA PILLOLA INTERNA --- */
+.av-btn__pill {
+    position: absolute;
+    /* Il GAP controlla dinamicamente lo schiacciamento verticale e orizzontale */
+    top: var(--av-gap);
+    bottom: var(--av-gap);
+
+    display: flex; align-items: center;
+    white-space: nowrap;
+    border-radius: var(--av-h);
+    font-size: calc(var(--av-h) * 0.28);
+    font-weight: bold;
+    padding: 0 calc(var(--av-h) * 0.25);
+
+    /* Colori dinamici da JS */
+    background-color: var(--av-pill-bg);
+    border: 1px solid var(--av-pill-border);
+    color: var(--av-pill-text);
+
+    /* Transizioni fluide su tutte le modifiche di stato */
+    transition: top var(--av-transition), bottom var(--av-transition),
+    right var(--av-transition), left var(--av-transition),
+    background-color var(--av-transition), border-color var(--av-transition),
+    color var(--av-transition);
+
+    pointer-events: none;
+}
+
+/* ---------------- DIREZIONE: LEFT ---------------- */
+.av-btn--left .av-btn__icon-wrapper { left: 0; }
+.av-btn--left .av-btn__text-container { left: calc(var(--av-h) - 5px); right: 0; }
+.av-btn--left .av-btn__pill {
+    left: 5px; /* Overlap stabile con l'icona */
+    right: var(--av-gap); /* Gap dinamico dal bordo destro */
+    transform: translateX(-15px); /* Partenza arretrata */
+}
+
+/* ---------------- DIREZIONE: RIGHT ---------------- */
+.av-btn--right .av-btn__icon-wrapper { right: 0; }
+.av-btn--right .av-btn__text-container { right: calc(var(--av-h) - 5px); left: 0; }
+.av-btn--right .av-btn__pill {
+    right: 5px;
+    left: var(--av-gap); /* Gap dinamico dal bordo sinistro */
+    transform: translateX(15px);
+}
+
+/* Risolve l'animazione di scorrimento pillola in espansione */
+.av-btn.is-expanded .av-btn__pill {
+    transform: translateX(0);
+}
+
+/* --- ANIMAZIONI DI ATTENZIONE MIRATE --- */
+
+@keyframes pulseBorder {
+    0%, 100% { border-color: var(--av-btn-border); box-shadow: 0 0 0 transparent; }
+    50% { border-color: var(--av-glow-color); box-shadow: 0 0 10px color-mix(in srgb, var(--av-glow-color) 40%, transparent); }
+}
+
+@keyframes pulsePill {
+    0%, 100% { border-color: var(--av-pill-border); background-color: var(--av-pill-bg); }
+    50% { border-color: var(--av-glow-color); background-color: color-mix(in srgb, var(--av-glow-color) 25%, transparent); }
+}
+
+@keyframes pulseIcon {
+    0%, 100% { color: var(--av-icon-color); transform: scale(1); }
+    50% { color: var(--av-glow-color); transform: scale(1.15); }
+}
+
+/* Applicazione delle classi in base alla configurazione */
+.av-btn.av-btn--glow-border {
+    animation: pulseBorder var(--av-glow-speed) infinite ease-in-out !important;
+    z-index: 20;
+}
+
+.av-btn.av-btn--glow-pill .av-btn__pill {
+    animation: pulsePill var(--av-glow-speed) infinite ease-in-out !important;
+}
+
+.av-btn.av-btn--glow-icon .av-btn__icon-wrapper {
+    animation: pulseIcon var(--av-glow-speed) infinite ease-in-out !important;
+}

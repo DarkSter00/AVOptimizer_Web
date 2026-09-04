@@ -1,3 +1,6 @@
+//imports
+import { AVButton} from "../components/AVButton/AVButton.js";
+
 window.toggleCard = function(subPath, safeId) {
     if (expandedCards.has(subPath)) {
         expandedCards.delete(subPath);
@@ -162,6 +165,7 @@ window.processRenderLogic = function(metrics) {
 function createCardDOM(subPath, activeCoreName, targetContainer) {
     const safeId = getSafeId(subPath);
     if (document.getElementById(safeId)) return;
+
     let card = document.createElement("div");
     card.className = "subfolder-card";
     card.id = safeId;
@@ -172,6 +176,7 @@ function createCardDOM(subPath, activeCoreName, targetContainer) {
     const escapedCoreName = activeCoreName.replace(/\\/g, '\\\\');
     const escapedSubPath = subPath.replace(/\\/g, '\\\\');
 
+    //Costruzione contenitori interni mantenendo il layout pre-esistente
     card.innerHTML = `
         <div class="ring-main" id="ring-main-${safeId}"></div>
         
@@ -182,10 +187,12 @@ function createCardDOM(subPath, activeCoreName, targetContainer) {
         </div>
         
         <div class="card-inner" id="inner-${safeId}">
-            ${window.getFolderHeaderHTML ? window.getFolderHeaderHTML(shortName, safeTitle, escapedSubPath, safeId) : ''}
+            <!-- Header iniettato programmaticamente -->
+            
             <div class="file-grid-animator" id="animator-${safeId}">
                 <div class="file-grid" id="grid-${safeId}"></div>
             </div>
+            
             <div class="card-footer" id="footer-${safeId}" onmouseleave="triggerMorphLeave('${safeId}')" onmouseenter="cancelMorphLeave('${safeId}')">
                 <div class="footer-top-row" id="top-row-${safeId}">
                     ${window.getLeftFooterHTML ? window.getLeftFooterHTML(escapedCoreName, escapedSubPath, safeId) : ''}
@@ -197,8 +204,185 @@ function createCardDOM(subPath, activeCoreName, targetContainer) {
         </div>
     `;
 
-    const excludeBtn = card.querySelector('.btn-exclude-action');
-    if (excludeBtn) excludeBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleFolderExclusion(activeCoreName, subPath, safeId); });
+    const cardInner = card.querySelector(`#inner-${safeId}`);
+
+    //Inizio costruzione componente Header
+    const cardHeader = document.createElement('div');
+    cardHeader.className = 'card-header';
+
+    const cardTitleRow = document.createElement('div')
+    cardTitleRow.className = 'card-title-row';
+
+    //Istanza: Pulsante apertura directory
+    const btnOpenFolder = new AVButton({
+        direction: 'left',
+        height: 42,
+        reactOnHover: true,
+        onState2: () => {
+            if (window.openSystemFolder) window.openSystemFolder(escapedSubPath);
+        },
+
+        states: [
+            //STATO 0: Normale (Blu)
+            {
+                icon: 'fa-solid fa-folder-open',
+                text: 'Apri cartella',
+                pillIcon: '',
+                width: 140,
+                gap: 4,
+                transitionDuration: 350,
+                autoRevertDelay: 0,
+                hoverEnterDelay: 250,
+                hoverLeaveDelay: 1200,
+                colors: {
+                    buttonBg: 'rgba(59, 130, 246, 0.15)',
+                    buttonBorder: 'var(--primary)',
+                    icon: 'var(--primary)',
+                    pillBg: 'rgba(255, 255, 255, 0.08)',
+                    pillBorder: 'rgba(255, 255, 255, 0.15)',
+                    pillText: 'var(--text-main)'
+                }
+            },
+            //STATO 1: Primo Click - Domanda
+            {
+                icon: 'fa-solid fa-folder-open',
+                text: 'Sicuro',
+                pillIcon: 'fa-solid fa-question',
+                width: 120,
+                gap: 2,
+                transitionDuration: 250,
+                autoRevertDelay: 3000, // Torna allo stato normale dopo 3 secondi se non clicchi
+                colors: {
+                    buttonBg: 'rgba(59, 130, 246, 0.15)',
+                    buttonBorder: 'var(--primary)',
+                    icon: 'var(--primary)',
+                    pillBg: 'rgba(16, 185, 129, 0.15)',
+                    pillBorder: 'var(--success)',
+                    pillText: 'var(--success)'
+                }
+            },
+            // STATO 2: Secondo Click - Azione eseguita
+            {
+                icon: 'fa-solid fa-check',
+                text: 'In apertura',
+                pillIcon: '',
+                width: 135,
+                gap: 5,
+                transitionDuration: 300,
+                autoRevertDelay: 1500,
+                colors: {
+                    buttonBg: 'rgba(16, 185, 129, 0.2)',
+                    buttonBorder: 'var(--success)',
+                    icon: 'var(--success)',
+                    pillBg: 'var(--success)',
+                    pillBorder: 'var(--success)',
+                    pillText: '#000'
+                }
+            }
+        ]
+    });
+
+    //Istanza: Riquadro del titolo (Centrale)
+    const centerTitleBox = document.createElement('div');
+    centerTitleBox.className = 'clickable-header-box';
+    centerTitleBox.onclick = () => window.toggleCard(subPath, safeId);
+    centerTitleBox.innerHTML = `
+        <div class="card-title-text-wrapper">
+            <span class="card-title-text" title="${safeTitle}">${shortName}</span>
+        </div>
+        <div class="status-badge" id="badge-${safeId}">IN ATTESA</div>
+    `;
+
+    //Istanza: Pulsante esclusione/inclusione
+    const btnExclude = new AVButton({
+        direction: 'right',
+        height: 42,
+        reactOnHover: true,
+
+        onState1: () => {
+            console.log("Richiesta esclusione cartella...");
+        },
+        onState2: () => {
+            if (window.toggleFolderExclusion) window.toggleFolderExclusion(activeCoreName, subPath, safeId);
+        },
+
+        states: [
+            // STATO 0: Normale (Rosso Pericolo)
+            {
+                icon: 'fa-solid fa-trash',
+                text: 'Escludi cartella',
+                pillIcon: '',
+                width: 160,
+                gap: 4,
+                transitionDuration: 350,
+                autoRevertDelay: 0,
+                hoverEnterDelay: 250,
+                hoverLeaveDelay: 1200,
+                colors: {
+                    buttonBg: 'rgba(239, 68, 68, 0.15)',
+                    buttonBorder: 'var(--danger)',
+                    icon: 'var(--danger)',
+                    pillBg: 'rgba(255, 255, 255, 0.08)',
+                    pillBorder: 'rgba(255, 255, 255, 0.15)',
+                    pillText: 'var(--text-main)'
+                }
+            },
+            // STATO 1: Primo Click - Conferma
+            {
+                icon: 'fa-solid fa-trash',
+                text: 'Confermi?',
+                pillIcon: 'fa-solid fa-triangle-exclamation',
+                width: 145,
+                gap: 2,
+                glow: {
+                    enabled: true,
+                    target: ['pill', 'icon'],
+                    color: '#FFFFFF',
+                    speed: 1.2
+                },
+                transitionDuration: 250,
+                autoRevertDelay: 3000,
+                colors: {
+                    buttonBg: 'rgba(239, 68, 68, 0.15)',
+                    buttonBorder: 'var(--danger)',
+                    icon: 'var(--danger)',
+                    pillBg: 'rgba(239, 68, 68, 0.2)',
+                    pillBorder: 'var(--danger)',
+                    pillText: 'var(--danger)'
+                }
+            },
+            // STATO 2: Secondo Click - Azione
+            {
+                icon: 'fa-solid fa-ban',
+                text: 'Esclusa',
+                pillIcon: '',
+                width: 120,
+                gap: 5,
+                transitionDuration: 300,
+                autoRevertDelay: 1500,
+                colors: {
+                    buttonBg: 'rgba(239, 68, 68, 0.3)',
+                    buttonBorder: 'var(--danger)',
+                    icon: 'var(--danger)',
+                    pillBg: 'var(--danger)',
+                    pillBorder: 'var(--danger)',
+                    pillText: '#fff'
+                }
+            }
+        ]
+    });
+
+    //Associo ID univoco al nodo generato per costruire updateCardData di modificarlo senza error
+    btnExclude.getNode().id = `btn-exclude-${safeId}`;
+
+    //Aggiungo i nodi alla riga
+    cardTitleRow.appendChild((btnOpenFolder.getNode()));
+    cardTitleRow.appendChild(centerTitleBox);
+    cardTitleRow.appendChild(btnExclude.getNode());
+    cardHeader.appendChild(cardTitleRow);
+
+    //Inserisco prima della griglia dei file
+    cardInner.insertBefore(cardHeader, cardInner.firstChild);
 
     if (targetContainer) targetContainer.appendChild(card);
     if (window.initRightPanelListeners) window.initRightPanelListeners(safeId);
@@ -247,17 +431,33 @@ function updateCardData(subPath, subData, safeId) {
 
     if (!isAnimatingExclusion) {
         if (btnExclude) {
+            //Aggiornamento classi del nuovo AVButton
+            const iconContainer = btnExclude.querySelector('.av-btn__icon');
+            const textNormal = btnExclude.querySelector('.av-btn__text--normal');
+            /*
             const iconContainer = document.getElementById(`btn-exclude-icon-${safeId}`);
             const textContainer = document.getElementById(`btn-exclude-text-${safeId}`);
+
+             */
             if (isEsclusa) {
                 btnExclude.classList.add("is-excluded");
+                //Aggiunte
+                btnExclude.classList.remove('av-btn--danger');
+                btnExclude.classList.add('av-btn--success');
+                //
                 if(iconContainer) iconContainer.innerHTML = '<i class="fa-solid fa-rotate-left"></i>';
-                if(textContainer) textContainer.textContent = 'Includi cartella';
+                //if(textContainer) textContainer.textContent = 'Includi cartella';
+                if(textNormal) textNormal.textContent = 'Includi cartella';
             }
             else {
                 btnExclude.classList.remove("is-excluded");
+                //Aggiunte
+                btnExclude.classList.remove('av-btn--success');
+                btnExclude.classList.add('av-btn--danger');
+                //
                 if(iconContainer) iconContainer.innerHTML = '<i class="fa-solid fa-ban"></i>';
-                if(textContainer) textContainer.textContent = 'Escludi cartella';
+                //if(textContainer) textContainer.textContent = 'Escludi cartella';
+                if(textNormal) textNormal.textContent = 'Includi cartella';
             }
         }
 

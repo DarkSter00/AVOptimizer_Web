@@ -89,9 +89,6 @@ if (scannerWidget) {
 }
 
 // --- LISTENERS BASE PER IL MENU LATERALE E PANNELLI ---
-const btnMobileMenu = document.getElementById("btn-mobile-menu");
-const mobileOverlay = document.getElementById("mobile-overlay");
-const sidebar = document.querySelector(".sidebar");
 
 if(btnMobileMenu) btnMobileMenu.addEventListener("click", () => {
     sidebar.classList.add("open");

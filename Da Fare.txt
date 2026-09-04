@@ -2,8 +2,6 @@
 
 - sulla notifica in basso a sinistra della scansione iniziale è possibile cliccarci, ma attualmente è abbastanza inutile: allarga il rettangolo e basta, quindi dobbiamo differenziare l'interfaccia e la disposizione degli elementi. nella versione standard sarà tutto più compatto, cliccandoci sopra il rettangolo si allarga e si alza, gli elementi si spostano e ingrandiscono
 
-- migliorare la barra superiore al canvas: i riquadri a pillola, aggiungendo animazioni migliori e il fatto che reagisca all'hover del cursore. migliorare l'animazione di transizione tra un "Core" (cartella root) e il cerchietto che rappresenta l'altro. dato che abbiamo spazio togliamo il fatto che il Core chiuso diventa un cerchietto e facciamo in modo che la pillola si oscuri e si rimpicciolisca (come accade con i menu del footer delle cartelle nel canvas) così manteniamo coerenza grafica. se per qualche motivo non ci staranno tutti rendiamo questo spazio scrollabile orizzontalmente con la rotellina del mouse e con una animazione di ingresso compaiono i tasti di navigazione per scorrere nella lista (tasto destro e sinistro) (se non si puà andare oltre il lato sinistro il pulsante per andare a sinistra deve sparire, se invece si può deve comparire, stessa cosa vale per quello destro)
-
 - rimuovere il tasto dell'hamburger menu laterale che rimane nell'angolo in alto a sinistra, bisogna riattivare anche la sua funzione perché sembra non funzionare quando ridimensiono la finestra del browser
 
 - i pulsanti esterni al canvas devono assumere la forma a pillola
@@ -14,5 +12,18 @@
 
 - la pillala del menu sinistro del footer cartella dedicato ai file in attesa non ha una animazione di ingresso. inoltre quando ci sto sopra il cursore non cambia rimane la freccia standard a differenza di tutti gli altri pulsanti del progetto.
 
-- l'animazione di chiusura della cartella non esegue l'animazione di scomparsa con zoom dei file all'interno (opposta a quella in ingresso e in ordine (dall'ultima alla prima))
+- i file in errore non mostrano il riquadro stagioneEpisodio e le informazioni del file non compaiono (se tali informazioni non sono disponibili si scrive N/A)
 
+- per alcune cartelle c'è un bug che non permette di interagire con la cartella nel canvas: premendo sul titolo della cartella non si estende per visualizzare i file, non si riesce ad interagire con il menu sinistro, mentre quello destro funziona.
+
+- sistemare un glitch grafico: quando si apre la lista delle dimensioni dei file (pulsante "Dimensione" nel menu footer a destra), dato che si devono disporre in due colonne nel caso in cui i nomi del file sono molto lunghi la seconda colonna sfora dal suo riquadro. a questo punto usiamo anche in questi riquadri di liste un flexbox e il nome se non del tutto leggibile inizierà a scorrere a destra e sinistra come nelle altre parti del progetto.
+
+- valido per tutti i pulsanti cliccabili: aggiungere una animazione di feedback al click, come un glow o un effetto di ridimensione e aumento veloce o oscuramento veloce (deve dare un feedback visivo al click)
+
+- BARRA SUPERIORE: - nelle schede "core" che identificano le cartelle root importate, quella attiva vorrei farla ancora più grande. - quando sono sopra ad una scheda non attiva (che è dietro a quella attiva, più piccola e oscurata)si ingrandisce leggermente e va benissimo, quindi vorrei farlo anche quando sono sopra ai pulsanti avanti e indietro, in pratica stando sul pulsante aventi, c'è l'animazione della scheda successiva a quella attiva che fa l'animazione di leggero ingrandimento (è una specie di anteprima di quello che farà il pulsante una volta premuto). 
+
+- separare il pulsante escludi/includi della cartella. dato che abbiamo creato un sistema modulare (framework), il AVButton non prevede una versione alternativa (non avrebbe senso, dato che basterebbe crearne uno nuovo), quindi dobbiamo aggiornare il codice per implementare il pulsante includi con la nuova struttura di AVButton.
+
+- aggiornare i pulsanti di "aggiungi cartella", "rimuovi tutte le cartelle", "rimuovi cartella", "avanti", "indietro" usando il nuovo AVButton
+
+- ristrutturare i file e le cartelle separando in pezzi l'interfaccia: - barra superiore (pulsanti globali: menu, aggiungi cartella, lista cartelle importate, elimina tutte le cartelle). - barra secondaria (pulsanti del canvas: appena sotto la precedente che riguarda il canvas attivo con: grafo del canvas, elimina canvas, informazioni del canvas: numero di file all'interno, numero di sottocartelle, numero file saltati, numero file completati, numero file audio ok, numero errori, numero file in coda, dimensione del canvas, operazioni in coro all'interno (lista se più di una)). - menu laterale: se aperto esso mostra informazioni globali (di tutti i canvas), così come pulsanti globali (impostazioni, grafo globale, apertura database, statistiche, prestazioni server, avvia elaborazioni, stop (hard reset del programma), log terminal). più avanti magari ci sarà bisogno di aggiornare questa lista degli elementi. questi sono solo quelle nuove, quelle attuali rimangono, ad esempio: cartella, header cartella, menu footer destro e sinistro, ecc...

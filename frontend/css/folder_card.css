@@ -8,6 +8,10 @@
 .subfolder-card.folder-excluded { opacity: 0.35 !important; filter: grayscale(100%) !important; pointer-events: none; }
 .subfolder-card.folder-excluded .card-inner { background: #18181E !important; border: 1px dashed #555; pointer-events: auto; }
 
+.subfolder-card:has(.av-btn--glow) {
+    z-index: 40 !important;
+}
+
 /* STATO: COMPLETATO e COMPLETANDO */
 .subfolder-card.folder-completed,
 .subfolder-card.folder-completando {
