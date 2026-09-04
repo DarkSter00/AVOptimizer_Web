@@ -108,5 +108,3 @@ if(document.getElementById("btn-toggle-play"))
 
 if(document.getElementById("btn-db-viewer"))
     document.getElementById("btn-db-viewer").addEventListener("click", window.openDbViewer);
-
-window.updateTutorialUI();

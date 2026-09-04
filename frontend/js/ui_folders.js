@@ -213,71 +213,26 @@ function createCardDOM(subPath, activeCoreName, targetContainer) {
     const cardTitleRow = document.createElement('div')
     cardTitleRow.className = 'card-title-row';
 
-    //Istanza: Pulsante apertura directory
+    // Istanza: Pulsante apertura directory (A 2 STATI: Azione Immediata)
     const btnOpenFolder = new AVButton({
-        direction: 'left',
+        direction: 'right',
         height: 42,
-        reactOnHover: true,
-        onState2: () => {
-            if (window.openSystemFolder) window.openSystemFolder(escapedSubPath);
-        },
 
         states: [
-            //STATO 0: Normale (Blu)
-            {
-                icon: 'fa-solid fa-folder-open',
-                text: 'Apri cartella',
-                pillIcon: '',
-                width: 140,
-                gap: 4,
-                transitionDuration: 350,
-                autoRevertDelay: 0,
-                hoverEnterDelay: 250,
-                hoverLeaveDelay: 1200,
-                colors: {
-                    buttonBg: 'rgba(59, 130, 246, 0.15)',
-                    buttonBorder: 'var(--primary)',
-                    icon: 'var(--primary)',
-                    pillBg: 'rgba(255, 255, 255, 0.08)',
-                    pillBorder: 'rgba(255, 255, 255, 0.15)',
-                    pillText: 'var(--text-main)'
-                }
+            { // STATO 0: Normale
+                icon: 'fa-solid fa-folder-open', text: 'Apri percorso', pillIcon: '',
+                width: 165, gap: 4, transitionDuration: 350,
+                autoRevertDelay: 0, hoverEnterDelay: 250, hoverLeaveDelay: 1200,
+                glow: { enabled: false },
+                colors: { buttonBg: 'rgba(59, 130, 246, 0.15)', buttonBorder: 'var(--primary)', icon: 'var(--primary)', pillBg: 'rgba(255, 255, 255, 0.08)', pillBorder: 'rgba(255, 255, 255, 0.15)', pillText: 'var(--text-main)' }
             },
-            //STATO 1: Primo Click - Domanda
-            {
-                icon: 'fa-solid fa-folder-open',
-                text: 'Sicuro',
-                pillIcon: 'fa-solid fa-question',
-                width: 120,
-                gap: 2,
-                transitionDuration: 250,
-                autoRevertDelay: 3000, // Torna allo stato normale dopo 3 secondi se non clicchi
-                colors: {
-                    buttonBg: 'rgba(59, 130, 246, 0.15)',
-                    buttonBorder: 'var(--primary)',
-                    icon: 'var(--primary)',
-                    pillBg: 'rgba(16, 185, 129, 0.15)',
-                    pillBorder: 'var(--success)',
-                    pillText: 'var(--success)'
-                }
-            },
-            // STATO 2: Secondo Click - Azione eseguita
-            {
-                icon: 'fa-solid fa-check',
-                text: 'In apertura',
-                pillIcon: '',
-                width: 135,
-                gap: 5,
-                transitionDuration: 300,
+            { // STATO 1: Azione Finale
+                action: () => { if (window.openSystemFolder) window.openSystemFolder(escapedSubPath); },
+                icon: 'fa-solid fa-check', text: 'Aperta', pillIcon: '',
+                width: 120, gap: 5, transitionDuration: 300,
                 autoRevertDelay: 1500,
-                colors: {
-                    buttonBg: 'rgba(16, 185, 129, 0.2)',
-                    buttonBorder: 'var(--success)',
-                    icon: 'var(--success)',
-                    pillBg: 'var(--success)',
-                    pillBorder: 'var(--success)',
-                    pillText: '#000'
-                }
+                glow: { enabled: false },
+                colors: { buttonBg: 'rgba(16, 185, 129, 0.2)', buttonBorder: 'var(--success)', icon: 'var(--success)', pillBg: 'var(--success)', pillBorder: 'var(--success)', pillText: '#000' }
             }
         ]
     });
@@ -293,92 +248,71 @@ function createCardDOM(subPath, activeCoreName, targetContainer) {
         <div class="status-badge" id="badge-${safeId}">IN ATTESA</div>
     `;
 
-    //Istanza: Pulsante esclusione/inclusione
+    // Istanza: Pulsante esclusione/inclusione (A 3 STATI: Pericolo)
+    // Istanza 1: Pulsante ESCLUDI (A 3 STATI: Pericolo)
     const btnExclude = new AVButton({
-        direction: 'right',
+        direction: 'left',
         height: 42,
-        reactOnHover: true,
-
-        onState1: () => {
-            console.log("Richiesta esclusione cartella...");
-        },
-        onState2: () => {
-            if (window.toggleFolderExclusion) window.toggleFolderExclusion(activeCoreName, subPath, safeId);
-        },
-
         states: [
-            // STATO 0: Normale (Rosso Pericolo)
-            {
-                icon: 'fa-solid fa-trash',
-                text: 'Escludi cartella',
-                pillIcon: '',
-                width: 160,
-                gap: 4,
-                transitionDuration: 350,
-                autoRevertDelay: 0,
-                hoverEnterDelay: 250,
-                hoverLeaveDelay: 1200,
-                colors: {
-                    buttonBg: 'rgba(239, 68, 68, 0.15)',
-                    buttonBorder: 'var(--danger)',
-                    icon: 'var(--danger)',
-                    pillBg: 'rgba(255, 255, 255, 0.08)',
-                    pillBorder: 'rgba(255, 255, 255, 0.15)',
-                    pillText: 'var(--text-main)'
-                }
+            { // STATO 0: Normale
+                icon: 'fa-solid fa-trash', text: 'Escludi cartella', pillIcon: '',
+                width: 185, gap: 4, transitionDuration: 350,
+                autoRevertDelay: 0, hoverEnterDelay: 250, hoverLeaveDelay: 1200,
+                glow: { enabled: false },
+                colors: { buttonBg: 'rgba(239, 68, 68, 0.15)', buttonBorder: 'var(--danger)', icon: 'var(--danger)', pillBg: 'rgba(255, 255, 255, 0.08)', pillBorder: 'rgba(255, 255, 255, 0.15)', pillText: 'var(--text-main)' }
             },
-            // STATO 1: Primo Click - Conferma
-            {
-                icon: 'fa-solid fa-trash',
-                text: 'Confermi?',
-                pillIcon: 'fa-solid fa-triangle-exclamation',
-                width: 145,
-                gap: 2,
-                glow: {
-                    enabled: true,
-                    target: ['pill', 'icon'],
-                    color: '#FFFFFF',
-                    speed: 1.2
-                },
-                transitionDuration: 250,
+            { // STATO 1: Conferma (Flashing Glow)
+                icon: 'fa-solid fa-trash', text: 'Confermi?', pillIcon: 'fa-solid fa-triangle-exclamation',
+                width: 145, gap: 2, transitionDuration: 250,
                 autoRevertDelay: 3000,
-                colors: {
-                    buttonBg: 'rgba(239, 68, 68, 0.15)',
-                    buttonBorder: 'var(--danger)',
-                    icon: 'var(--danger)',
-                    pillBg: 'rgba(239, 68, 68, 0.2)',
-                    pillBorder: 'var(--danger)',
-                    pillText: 'var(--danger)'
-                }
+                glow: { enabled: true, target: ['border', 'icon'], color: 'var(--danger)', speed: 1.2 },
+                colors: { buttonBg: 'rgba(239, 68, 68, 0.15)', buttonBorder: 'var(--danger)', icon: 'var(--danger)', pillBg: 'rgba(239, 68, 68, 0.2)', pillBorder: 'var(--danger)', pillText: 'var(--danger)' }
             },
-            // STATO 2: Secondo Click - Azione
-            {
-                icon: 'fa-solid fa-ban',
-                text: 'Esclusa',
-                pillIcon: '',
-                width: 120,
-                gap: 5,
-                transitionDuration: 300,
+            { // STATO 2: Azione Finale
+                action: () => { if (window.toggleFolderExclusion) window.toggleFolderExclusion(activeCoreName, subPath, safeId); },
+                icon: 'fa-solid fa-ban', text: 'Esclusa', pillIcon: '',
+                width: 120, gap: 5, transitionDuration: 300,
                 autoRevertDelay: 1500,
-                colors: {
-                    buttonBg: 'rgba(239, 68, 68, 0.3)',
-                    buttonBorder: 'var(--danger)',
-                    icon: 'var(--danger)',
-                    pillBg: 'var(--danger)',
-                    pillBorder: 'var(--danger)',
-                    pillText: '#fff'
-                }
+                glow: { enabled: false },
+                colors: { buttonBg: 'rgba(239, 68, 68, 0.3)', buttonBorder: 'var(--danger)', icon: 'var(--danger)', pillBg: 'var(--danger)', pillBorder: 'var(--danger)', pillText: '#fff' }
             }
         ]
     });
-
-    //Associo ID univoco al nodo generato per costruire updateCardData di modificarlo senza error
     btnExclude.getNode().id = `btn-exclude-${safeId}`;
 
+    // Istanza 2: Pulsante INCLUDI (A 2 STATI: Azione Diretta Positiva)
+    const btnInclude = new AVButton({
+        direction: 'left',
+        height: 42,
+        states: [
+            { // STATO 0: Normale (Verde base)
+                icon: 'fa-solid fa-rotate-left', text: 'Includi cartella', pillIcon: '',
+                width: 180, gap: 4, transitionDuration: 350,
+                autoRevertDelay: 0, hoverEnterDelay: 250, hoverLeaveDelay: 1200,
+                glow: { enabled: false },
+                colors: { buttonBg: 'rgba(16, 185, 129, 0.15)', buttonBorder: 'var(--success)', icon: 'var(--success)', pillBg: 'rgba(255, 255, 255, 0.08)', pillBorder: 'rgba(255, 255, 255, 0.15)', pillText: 'var(--text-main)' }
+            },
+            { // STATO 1: Azione Finale (Niente conferma richiesta)
+                action: () => { if (window.toggleFolderExclusion) window.toggleFolderExclusion(activeCoreName, subPath, safeId); },
+                icon: 'fa-solid fa-check', text: 'Inclusa', pillIcon: '',
+                width: 120, gap: 5, transitionDuration: 300,
+                autoRevertDelay: 1500,
+                glow: { enabled: false },
+                colors: { buttonBg: 'rgba(16, 185, 129, 0.3)', buttonBorder: 'var(--success)', icon: 'var(--success)', pillBg: 'var(--success)', pillBorder: 'var(--success)', pillText: '#000' }
+            }
+        ]
+    });
+    btnInclude.getNode().id = `btn-include-${safeId}`;
+
+    //Esclusione di default (updateCardData lo mostrerà)
+    btnInclude.getNode().style.display = 'none';
+
     //Aggiungo i nodi alla riga
-    cardTitleRow.appendChild((btnOpenFolder.getNode()));
+    cardTitleRow.appendChild(btnOpenFolder.getNode());
     cardTitleRow.appendChild(centerTitleBox);
     cardTitleRow.appendChild(btnExclude.getNode());
+    cardTitleRow.appendChild(btnInclude.getNode());
+
     cardHeader.appendChild(cardTitleRow);
 
     //Inserisco prima della griglia dei file
@@ -398,8 +332,8 @@ function updateCardData(subPath, subData, safeId) {
     const badgeEl = document.getElementById(`badge-${safeId}`);
     const animatorEl = document.getElementById(`animator-${safeId}`);
     const gridEl = document.getElementById(`grid-${safeId}`);
-    const btnExclude = document.getElementById(`btn-exclude-${safeId}`);
 
+    // Dati base
     let c_comp = subData.completed || 0;
     let c_err = subData.errors || 0;
     let c_skip = subData.skipped || 0;
@@ -408,11 +342,14 @@ function updateCardData(subPath, subData, safeId) {
     let validSize = subData.valid_size || 0;
     let is_processing = subData.is_processing || false;
     let totalProcessed = c_comp + c_err + c_skip;
+
+    // Stati calcolati
     let isEsclusa = (subData.status === "Esclusa");
     let isCompletato = (subData.status === "Completato");
     let isCompletando = (subData.status === "Completando...");
     let is_visually_processing = (subData.status === "In Esecuzione");
 
+    // Funzione helper per badge centrale
     const updateBadgeText = (text) => {
         if (!badgeEl) return;
         badgeEl.style.backgroundColor = ""; badgeEl.style.borderColor = "";
@@ -429,38 +366,27 @@ function updateCardData(subPath, subData, safeId) {
     const overlayIcon = document.getElementById(`overlay-icon-${safeId}`);
     const overlayTitle = document.getElementById(`overlay-title-${safeId}`);
 
+    // --- AGGIORNAMENTO STATI E UI ---
     if (!isAnimatingExclusion) {
-        if (btnExclude) {
-            //Aggiornamento classi del nuovo AVButton
-            const iconContainer = btnExclude.querySelector('.av-btn__icon');
-            const textNormal = btnExclude.querySelector('.av-btn__text--normal');
-            /*
-            const iconContainer = document.getElementById(`btn-exclude-icon-${safeId}`);
-            const textContainer = document.getElementById(`btn-exclude-text-${safeId}`);
 
-             */
+        // --- NUOVA GESTIONE BOTTONI ESCLUDI/INCLUDI ---
+        const btnIncludeDOM = document.getElementById(`btn-include-${safeId}`);
+        const btnExcludeDOM = document.getElementById(`btn-exclude-${safeId}`);
+
+        if (btnExcludeDOM && btnIncludeDOM) {
             if (isEsclusa) {
-                btnExclude.classList.add("is-excluded");
-                //Aggiunte
-                btnExclude.classList.remove('av-btn--danger');
-                btnExclude.classList.add('av-btn--success');
-                //
-                if(iconContainer) iconContainer.innerHTML = '<i class="fa-solid fa-rotate-left"></i>';
-                //if(textContainer) textContainer.textContent = 'Includi cartella';
-                if(textNormal) textNormal.textContent = 'Includi cartella';
-            }
-            else {
-                btnExclude.classList.remove("is-excluded");
-                //Aggiunte
-                btnExclude.classList.remove('av-btn--success');
-                btnExclude.classList.add('av-btn--danger');
-                //
-                if(iconContainer) iconContainer.innerHTML = '<i class="fa-solid fa-ban"></i>';
-                //if(textContainer) textContainer.textContent = 'Escludi cartella';
-                if(textNormal) textNormal.textContent = 'Includi cartella';
+                // Se la cartella è esclusa, nascondi il bottone rosso e mostra il verde
+                btnExcludeDOM.style.display = 'none';
+                btnIncludeDOM.style.display = 'block';
+            } else {
+                // Se la cartella è attiva, mostra il rosso e nascondi il verde
+                btnExcludeDOM.style.display = 'block';
+                btnIncludeDOM.style.display = 'none';
             }
         }
+        // ----------------------------------------------
 
+        // Gestione Classi e Overlay Card
         if (isCompletando) {
             card.classList.remove("active-execution", "folder-excluded", "folder-completed");
             card.classList.add("folder-completando");
@@ -483,6 +409,7 @@ function updateCardData(subPath, subData, safeId) {
             card.classList.add("folder-completed");
             updateBadgeText("COMPLETATO");
             if(overlay) overlay.classList.remove("active");
+
             if (!userOpenedCards.has(subPath) && expandedCards.has(subPath)) {
                 if (!folderCloseTimers[subPath]) {
                     folderCloseTimers[subPath] = setTimeout(() => { expandedCards.delete(subPath); delete folderCloseTimers[subPath]; if (lastMetrics) window.processRenderLogic(lastMetrics); }, 2000);
@@ -507,6 +434,7 @@ function updateCardData(subPath, subData, safeId) {
         }
     }
 
+    // --- CALCOLO STATISTICHE E CARICAMENTO ---
     let pMeta = subData.p_meta || 0; let pVideo = subData.p_v_codec || 0;
     let pAudio = subData.p_a_codec || 0; let pVol = subData.p_vol || 0;
     let displayPct = subData.p_global || 0;
@@ -514,6 +442,7 @@ function updateCardData(subPath, subData, safeId) {
     if (isCompletato || isEsclusa) displayPct = 100.0;
     else if (displayPct >= 100 && totalProcessed < c_tot) displayPct = 99.9;
 
+    // Aggiornamento Cerchio di Caricamento (Ring)
     if (!isCompletato && !isEsclusa) {
         const rMain = document.getElementById(`ring-main-${safeId}`);
         if(rMain) {
@@ -523,6 +452,7 @@ function updateCardData(subPath, subData, safeId) {
         }
     }
 
+    // Calcolo ETA
     let progVid = c_tot > 0 ? (subData.video_processed_duration / subData.total_duration) * 100 : 0;
     progVid = Math.min(100, Math.max(0, progVid || 0));
 
@@ -548,10 +478,18 @@ function updateCardData(subPath, subData, safeId) {
         window.updateEtaDisplay(safeId, -1, 'pending');
     }
 
+    // Aggiornamenti componenti esterni dipendenti
     if (window.updateLeftFooterData) window.updateLeftFooterData(safeId, subData, c_comp, c_skip, c_aud, c_err);
     if (window.updateRightFooterData) window.updateRightFooterData(safeId, pMeta, pVideo, pAudio, pVol, displayPct, totalProcessed, c_tot, validSize);
-    if (animatorEl) { if (expandedCards.has(subPath)) animatorEl.classList.add("open"); else animatorEl.classList.remove("open"); }
-    if (expandedCards.has(subPath)) { renderFileBoxes(gridEl, subData.files); }
+
+    // Gestione espansione griglia
+    if (animatorEl) {
+        if (expandedCards.has(subPath)) animatorEl.classList.add("open");
+        else animatorEl.classList.remove("open");
+    }
+    if (expandedCards.has(subPath)) {
+        renderFileBoxes(gridEl, subData.files);
+    }
 
     if (isFirstUpdate) card.dataset.initialized = "true";
 }

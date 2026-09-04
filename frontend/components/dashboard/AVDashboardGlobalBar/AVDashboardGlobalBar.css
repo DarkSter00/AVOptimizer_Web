@@ -1,0 +1,58 @@
+/* frontend/components/dashboard/AVDashboardGlobalBar/AVDashboardGlobalBar.css */
+
+.av-global-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    /* Variabili dinamiche iniettate dal JS */
+    height: var(--gb-height, 64px);
+    padding: var(--gb-padding, 0 16px);
+    gap: var(--gb-gap, 16px);
+    background: var(--gb-bg, rgba(255, 255, 255, 0.03));
+    border: var(--gb-border, 1px solid rgba(255, 255, 255, 0.08));
+    border-radius: var(--gb-radius, 24px);
+    margin: var(--gb-margin, 0 auto);
+
+    /* Transizione per l'espansione */
+    max-width: var(--gb-compact-width, 300px); /* Larghezza massima da chiuso */
+    width: 100%;
+    overflow: hidden;
+    flex-shrink: 0;
+    transition: max-width 0.5s cubic-bezier(0.34, 1.5, 0.64, 1),
+    background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* STATO ESPANSO */
+.av-global-bar.is-expanded {
+    max-width: 100%; /* Si allarga fino a occupare tutto lo spazio concesso dal parent */
+}
+
+/* ZONIZZAZIONE INTERNA */
+.av-global-bar__left,
+.av-global-bar__right {
+    display: flex;
+    align-items: center;
+    gap: var(--gb-inner-gap, 12px);
+    flex-shrink: 0;
+}
+
+.av-global-bar__center {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    justify-content: center;
+    align-items: center;
+    opacity: 0; /* Invisibile finché non è espanso */
+    transform: scale(0.95);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none; /* Disattiva i click finché è invisibile */
+}
+
+.av-global-bar.is-expanded .av-global-bar__center {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+    transition-delay: 0.15s; /* Appare morbido dopo che la barra si è allargata */
+}

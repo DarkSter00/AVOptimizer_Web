@@ -1,0 +1,106 @@
+/* frontend/components/AVScrollMenu/AVScrollMenu.css */
+
+.av-scroll-menu-wrapper {
+    display: flex;
+    align-items: center;
+    height: 52px;
+    box-sizing: border-box;
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+    border-radius: 26px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 4px;
+    gap: 4px;
+    width: 100%;
+}
+
+.av-scroll-menu-track {
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    flex: 1;
+    height: 100%;
+    gap: 0px; /* Azzeriamo il gap, usiamo i margini dinamici */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.av-scroll-menu-track::-webkit-scrollbar { display: none; }
+
+/* Contenitori Frecce Laterali (Scomparsa se non servono) */
+.av-sm-btn-wrapper {
+    transition: all 0.3s cubic-bezier(0.34, 1.5, 0.64, 1);
+    display: flex;
+    overflow: hidden;
+}
+.av-sm-btn-wrapper.is-disabled {
+    opacity: 0.2;
+    pointer-events: none;
+    transform: scale(0.9);
+}
+.av-sm-btn-wrapper.is-hidden {
+    width: 0px !important;
+    opacity: 0;
+    pointer-events: none;
+    margin: 0;
+}
+
+/* =========================================
+   SCHEDE (CORE) - STATO NON ATTIVO
+========================================= */
+.av-scroll-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 16px;
+    height: 100%;
+    border-radius: 20px;
+    cursor: pointer;
+    white-space: nowrap;
+    user-select: none;
+    flex-shrink: 0;
+
+    /* Riduzione, Scurimento e Avvicinamento delle inattive */
+    opacity: 0.45;
+    transform: scale(0.85);
+    filter: brightness(0.6) grayscale(0.2);
+    margin: 0 -4px; /* Riduce il gap visivo compensando il rimpicciolimento */
+
+    transition: all 0.3s cubic-bezier(0.34, 1.5, 0.64, 1);
+}
+
+/* TEMI DI COLORE (Ora applicati sempre, non solo se active) */
+.av-scroll-menu-item.theme-pending { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); color: var(--text-main, #cbd5e1); }
+.av-scroll-menu-item.theme-processing { background: rgba(245, 158, 11, 0.15); border: 1px solid var(--warning, #f59e0b); color: #fff; }
+.av-scroll-menu-item.theme-completed { background: rgba(16, 185, 129, 0.15); border: 1px solid var(--success, #10b981); color: #fff; }
+.av-scroll-menu-item.theme-error { background: rgba(239, 68, 68, 0.15); border: 1px solid var(--danger, #ef4444); color: #fff; }
+
+.av-scroll-menu-item .status-icon { font-size: 0.9em; }
+.theme-pending .status-icon { color: var(--text-muted, #94a3b8); }
+.theme-processing .status-icon { color: var(--warning, #f59e0b); }
+.theme-completed .status-icon { color: var(--success, #10b981); }
+.theme-error .status-icon { color: var(--danger, #ef4444); }
+
+/* =========================================
+   STATO ATTIVO E ANTEPRIMA (HOVER)
+========================================= */
+.av-scroll-menu-item.is-active {
+    opacity: 1;
+    transform: scale(1);
+    filter: brightness(1) grayscale(0);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    margin: 0 8px; /* Spinge via le schede inattive */
+}
+.av-scroll-menu-item.is-active:active {
+    transform: scale(0.95);
+}
+
+/* Anteprima identica sia per Hover nativo che per Hover sulle Frecce */
+.av-scroll-menu-item:hover,
+.av-scroll-menu-item.preview-target {
+    opacity: 0.85;
+    transform: scale(0.92);
+    filter: brightness(0.95) grayscale(0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin: 0 2px;
+    z-index: 10;
+}

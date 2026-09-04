@@ -7,182 +7,37 @@
   <link rel="stylesheet" href="style.css?v=37">
   <!-- Framework personale degli elementi grafici -->
   <link rel="stylesheet" href="components/AVButton/AVButton.css">
+  <link rel="stylesheet" href="components/AVScrollMenu/AVScrollMenu.css">
+  <link rel="stylesheet" href="components/AVBootManager/AVBootManager.css">
+  <link rel="stylesheet" href="css/dashboard/ui_global_bar.css">
   <!-- Font Awesome 6 -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="icon" href="data:,">
 </head>
-<body>
-
-<div id="mobile-overlay" class="mobile-overlay"></div>
-
-<div class="app-container">
-  <aside class="sidebar">
-    <div class="brand">
-      <h2><i class="fa-solid fa-bolt"></i> A/V Optimizer</h2>
-      <span class="version">v.8 Web</span>
-    </div>
-
-    <div class="actions">
-      <div style="margin-bottom: 5px; display: flex; align-items: center; gap: 8px;">
-        <input type="checkbox" id="chk-force-rescan" style="cursor: pointer; width: 14px; height: 14px;">
-        <label for="chk-force-rescan" style="font-size: 11px; color: var(--text-muted); cursor: pointer;">Forza Ricontrollo (Ignora Cache)</label>
-      </div>
-      <div class="btn-group">
-        <button id="btn-toggle-play" class="btn btn-secondary" disabled><i class="fa-solid fa-play"></i> Avvia</button>
-        <button id="btn-stop" class="btn btn-danger"><i class="fa-solid fa-stop"></i> Stop Assoluto</button>
-      </div>
-      <button id="btn-settings" class="btn btn-secondary"><i class="fa-solid fa-gear"></i> Impostazioni / Log</button>
-      <button class="btn btn-secondary mt-2" onclick="openModal('graph')"><i class="fa-solid fa-sitemap"></i> Grafo Globale</button>
-      <button id="btn-db-viewer" class="btn btn-outline-primary mt-2"><i class="fa-solid fa-database"></i> Apri Visualizzatore DB</button>
-    </div>
-
-    <div class="global-metrics">
-      <h4>STATO GLOBALE</h4>
-      <div class="progress-bar-container">
-        <div id="global-progress" class="progress-fill success-fill"></div>
-      </div>
-      <div class="stats-grid">
-        <div class="stat-box interactive" onclick="openModal('completed')" style="animation-delay: 0.1s;">
-          <span class="stat-value" id="lbl-files">0/0</span>
-          <span class="stat-label">Completati</span>
-        </div>
-        <div class="stat-box interactive" style="animation-delay: 0.15s;">
-          <span class="stat-value text-primary" id="lbl-saved-space">0 B</span>
-          <span class="stat-label">Spazio Lib.</span>
-        </div>
-        <div class="stat-box interactive" onclick="openModal('skipped')" style="animation-delay: 0.2s;">
-          <span class="stat-value text-cyan" id="lbl-skipped">0</span>
-          <span class="stat-label">Saltati</span>
-        </div>
-        <div class="stat-box interactive" onclick="openModal('errors')" style="animation-delay: 0.25s;">
-          <span class="stat-value text-danger" id="lbl-errors">0</span>
-          <span class="stat-label">Errori</span>
-        </div>
-        <div class="stat-box interactive" onclick="openModal('pending')" style="animation-delay: 0.3s;">
-          <span class="stat-value text-muted" id="lbl-pending">0</span>
-          <span class="stat-label">In Attesa</span>
-        </div>
-      </div>
-    </div>
-  </aside>
-
-  <!-- Widget Scansione e Rendering Rimangono Invariati -->
-  <div id="scanner-widget" class="floating-widget hidden">
-    <div class="widget-progress-bg warning-bg" id="scanner-bg"></div>
-    <div class="widget-content">
-      <div class="widget-header">
-        <div class="widget-spinner warning-spinner"></div>
-        <span class="widget-title text-warning">Scansione Python</span>
-        <span id="scanner-pct-text" class="widget-pct">0%</span>
-      </div>
-      <div class="widget-step" id="scanner-step-text">Mappatura disco...</div>
-      <div class="widget-file" id="scanner-file-text">Attendere...</div>
-    </div>
+<body class="app-layout">
+  <!-- COMPONENTE 1: Barra Globale -->
+  <!-- Inizia compatta, si espande quando si aggiunge la prima cartella -->
+  <div id="av-global-bar">
+    <!-- Il componente AVDashboardGlobalBar inietterà qui Hamburger, Add, ScrollMenu e Reset -->
   </div>
 
-  <div id="ui-loading-overlay" class="floating-widget hidden">
-    <div class="widget-progress-bg primary-bg" id="ui-builder-bg"></div>
-    <div class="widget-content">
-      <div class="widget-header">
-        <div class="widget-spinner primary-spinner"></div>
-        <span class="widget-title text-primary">Costruzione Canvas</span>
-        <span id="ui-loading-text" class="widget-pct">0%</span>
-      </div>
-      <div class="widget-step" id="ui-loading-desc">Sincronizzazione DOM...</div>
-      <div class="widget-file">Generazione riquadri visivi in corso</div>
-    </div>
+  <!-- AREA DI LAVORO FLEXBOX -->
+  <div id="av-workspace">
+    <!-- COMPONENTE 2: Menu Laterale -->
+    <!-- Inizia a larghezza 0, si allarga spingendo il canvas -->
+    <aside id="av-global-menu" class="av-box">
+      <!-- Il componente AVDashboardGlobalMenu inietterà qui i suoi bottoni -->
+    </aside>
+
+    <!-- COMPONENTE 3: Canvas -->
+    <main id="av-canvas" class="av-box">
+      <!-- Il componente AVDashboardCanvas inietterà qui la toolbar interna e le subfolder-card -->
+    </main>
   </div>
-
-  <main class="main-content">
-
-    <!-- TOP NAVBAR FISSA E COMPLETA -->
-    <header class="top-navbar slide-down" id="top-navbar">
-
-      <!-- SINISTRA: Menu e Aggiungi -->
-      <div class="header-left-actions">
-        <button id="btn-mobile-menu" class="top-icon-btn" title="Menu Laterale"><i class="fa-solid fa-bars"></i></button>
-
-        <div class="top-action-container left-expand type-add">
-          <button id="btn-add-folder-smart" class="top-action-btn btn-primary-style" onclick="handleTopAction('btn-add-folder-smart', 'add-folder')" onmouseleave="handleBtnLeave(this)" onmouseenter="handleBtnEnter(this)">
-            <div class="btn-main-icon"><i class="fa-solid fa-folder-plus"></i></div>
-            <div class="btn-text-content">
-              <span class="txt-normal">Aggiungi nuova cartella</span>
-              <span class="txt-confirm"><i class="fa-solid fa-question"></i> Sicuro?</span>
-            </div>
-          </button>
-        </div>
-      </div>
-
-      <!-- CENTRO: Core Selector -->
-      <div class="core-selector-wrapper" id="core-selector-wrapper">
-        <button id="btn-core-prev" class="btn-core-scroll btn-hidden"><i class="fa-solid fa-chevron-left"></i></button>
-        <div class="core-selector" id="core-selector"></div>
-        <button id="btn-core-next" class="btn-core-scroll btn-hidden"><i class="fa-solid fa-chevron-right"></i></button>
-      </div>
-
-      <!-- DESTRA: Reset Totale -->
-      <div class="header-right-actions">
-        <div class="top-action-container right-expand type-reset">
-          <button id="btn-reset-all-smart" class="top-action-btn btn-danger-style" onclick="handleTopAction('btn-reset-all-smart', 'reset-all')" onmouseleave="handleBtnLeave(this)" onmouseenter="handleBtnEnter(this)">
-            <div class="btn-main-icon"><i class="fa-solid fa-power-off"></i></div>
-            <div class="btn-text-content">
-              <span class="txt-normal">Resetta tutto</span>
-              <span class="txt-confirm"><i class="fa-solid fa-triangle-exclamation"></i> Svuotare RAM?</span>
-            </div>
-          </button>
-        </div>
-      </div>
-    </header>
-
-    <!-- SUB-NAVBAR CANVAS TOOLBAR -->
-    <div class="canvas-toolbar slide-down" id="canvas-toolbar" style="display: none;">
-      <div class="canvas-toolbar-left">
-        <i class="fa-solid fa-folder-tree" style="color: var(--primary);"></i>
-        <span id="canvas-toolbar-title">Root Folder</span>
-      </div>
-      <div class="canvas-toolbar-right">
-        <button class="canvas-icon-btn" onclick="openModal('core-graph')" title="Grafo del Core Attuale"><i class="fa-solid fa-project-diagram"></i> Grafo Core</button>
-
-        <div class="top-action-container right-expand type-delete">
-          <button id="btn-delete-core-smart" class="top-action-btn btn-warning-style" onclick="handleTopAction('btn-delete-core-smart', 'delete-core')" onmouseleave="handleBtnLeave(this)" onmouseenter="handleBtnEnter(this)">
-            <div class="btn-main-icon"><i class="fa-solid fa-trash"></i></div>
-            <div class="btn-text-content">
-              <span class="txt-normal">Rimuovi cartella corrente</span>
-              <span class="txt-confirm"><i class="fa-solid fa-question"></i> Eliminare?</span>
-            </div>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="canvas-scroll-wrapper" id="canvas-scroll-wrapper">
-      <div id="conavas-blocker" class="canvas-blocke hidden"></div>
-      <div id="canvas-area" class="canvas-area"></div>
-    </div>
-  </main>
-
-  <div id="data-modal" class="modal-overlay hidden">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3 id="modal-title">Dettagli</h3>
-        <button class="btn-icon" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <div class="modal-body" id="modal-body"></div>
-    </div>
-  </div>
-</div>
-
-<div id="dnd-overlay" class="dnd-overlay">
-  <div class="dnd-box" id="dnd-box">
-    <div class="dnd-icon"><i class="fa-solid fa-folder-plus"></i></div>
-    <div class="dnd-text">Rilascia le cartelle per l'analisi</div>
-    <div class="dnd-subtext">Verranno accodate ai Core di esecuzione</div>
-  </div>
-</div>
 
 <script src="js/globals.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/api.js"></script>
-<script src="js/ui_dashboard.js"></script>
 <script src="js/ui_modals.js"></script>
 <script src="js/ui_files.js"></script>
 <script src="js/main.js"></script>
@@ -191,6 +46,7 @@
 <script src="js/ui_folder_footer_right.js"></script>
 
 <!-- Moduli caricati -->
+<script type="module" src="js/ui_dashboard.js"></script>
 <script type="module" src="js/ui_folders.js"></script>
 
 </body>

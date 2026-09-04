@@ -1,33 +1,55 @@
 // frontend/components/AVButton/AVButton.js
 export class AVButton {
     constructor(config) {
-        this.direction = config.direction || 'left';
+        this.direction = config.direction || 'right';
         this.height = config.height || 42;
 
-        // Reazione in Hover (true = si espande al passaggio del mouse)
         this.reactOnHover = config.reactOnHover !== undefined ? config.reactOnHover : true;
+        this.isDisabled = config.disabled || false;
 
-        // Callbacks
-        this.onState1 = config.onState1 || (() => {}); // Azione al primo click
-        this.onState2 = config.onState2 || (() => {}); // Azione finale al secondo click
+        this.hoverFeedback = config.hoverFeedback !== undefined ? config.hoverFeedback : true;
+        this.clickFeedback = config.clickFeedback !== undefined ? config.clickFeedback : true;
 
-        // Array dei 3 Stati (0: Normale, 1: Primo Click, 2: Secondo Click)
-        this.states = config.states || this._getDefaultStates();
+        // ARRAY DI STATI DI LUNGHEZZA N
+        this.states = config.states || [];
+
+        this.initialStateConfig = config.initialState || null;
+        this.isInitialStateActive = !!this.initialStateConfig;
 
         this.currentState = 0;
         this.isExpanded = false;
 
-        // Timers indipendenti
         this.hoverEnterTimer = null;
         this.hoverLeaveTimer = null;
         this.revertTimer = null;
 
-        // Inizializzazione
         this.element = this._createDOM();
         this.element.style.setProperty('--av-h', `${this.height}px`);
 
-        this._applyState(0);
+        if (this.hoverFeedback) {
+            this.element.classList.add('av-btn--hover-feedback');
+        }
+
+        if (this.isDisabled) this.setDisabled(true);
+
+        if (this.isInitialStateActive) {
+            this._applyCustomStateConfig(this.initialStateConfig);
+        } else {
+            this._applyState(0, false); // Applica lo stato 0 senza triggerare la sua action
+        }
+
         this._attachEvents();
+    }
+
+    setDisabled(disabled) {
+        this.isDisabled = disabled;
+        if (disabled) {
+            this.element.classList.add('is-disabled');
+            this.isExpanded = false;
+            this.element.classList.remove('is-expanded');
+        } else {
+            this.element.classList.remove('is-disabled');
+        }
     }
 
     _createDOM() {
@@ -47,12 +69,9 @@ export class AVButton {
         return btn;
     }
 
-    _applyState(index) {
-        this.currentState = index;
-        const s = this.states[index];
+    _applyCustomStateConfig(s) {
         const el = this.element;
 
-        // 1. Applica Variabili CSS Dinamiche (Colori, Gap, Dimensioni, Velocità Transizione)
         el.style.setProperty('--av-current-w', `${s.width}px`);
         el.style.setProperty('--av-gap', `${s.gap}px`);
         el.style.setProperty('--av-transition', `${s.transitionDuration}ms`);
@@ -64,10 +83,21 @@ export class AVButton {
         el.style.setProperty('--av-pill-bg', s.colors.pillBg);
         el.style.setProperty('--av-pill-border', s.colors.pillBorder);
         el.style.setProperty('--av-pill-text', s.colors.pillText);
-        // Pulizia classi di glow precedenti
+
+        const mainIcon = el.querySelector('.main-icon');
+        mainIcon.className = `main-icon ${s.icon}`;
+
+        const pillContent = el.querySelector('.pill-content');
+        let html = '';
+        if (s.pillIcon) html += `<i class="${s.pillIcon}" style="margin-right: 6px;"></i>`;
+        html += s.text;
+        pillContent.innerHTML = html;
+
+        if (this.isExpanded) el.classList.add('is-expanded');
+        else el.classList.remove('is-expanded');
+
         el.classList.remove('av-btn--glow-border', 'av-btn--glow-pill', 'av-btn--glow-icon');
 
-        // Gestione del Glowing flessibile per target
         if (s.glow && s.glow.enabled) {
             const targets = Array.isArray(s.glow.target) ? s.glow.target : [s.glow.target || 'border'];
             const glowColor = s.glow.color || '#FFFFFF';
@@ -81,84 +111,113 @@ export class AVButton {
                 if (t === 'icon') el.classList.add('av-btn--glow-icon');
             });
         }
+    }
 
-        // 2. Aggiorna l'Icona Esterna (il cerchio)
-        const mainIcon = el.querySelector('.main-icon');
-        mainIcon.className = `main-icon ${s.icon}`;
+    // Applica uno stato e, opzionalmente, esegue l'azione associata
+    _applyState(index, runAction = true) {
+        if (index >= this.states.length) index = 0; // Previene errori se l'indice sfora
+        this.currentState = index;
+        const s = this.states[index];
 
-        // 3. Aggiorna il testo e l'icona della Pillola Interna
-        const pillContent = el.querySelector('.pill-content');
-        let html = '';
-        if (s.pillIcon) html += `<i class="${s.pillIcon}" style="margin-right: 6px;"></i>`;
-        html += s.text;
-        pillContent.innerHTML = html;
+        this._applyCustomStateConfig(s);
 
-        // Applica visivamente la larghezza
-        if (this.isExpanded) el.classList.add('is-expanded');
-        else el.classList.remove('is-expanded');
+        // Se lo stato prevede un'azione, eseguila
+        if (runAction && typeof s.action === 'function') {
+            s.action(this); // Passa l'istanza del pulsante stesso come parametro (utile per controlli futuri)
+        }
 
-        // 4. Gestione Auto-Ritorno (Auto-Revert)
+        // Gestione Auto-Ritorno
         clearTimeout(this.revertTimer);
         if (s.autoRevertDelay > 0) {
             this.revertTimer = setTimeout(() => {
-                let previousState = this.currentState - 1;
-                if (previousState < 0) previousState = 0;
+                // Ritorna allo stato specificato, o di default allo stato 0
+                const revertTarget = s.revertToIndex !== undefined ? s.revertToIndex : 0;
 
-                // Se torniamo a 0 e il mouse non è sopra, chiudiamo il bottone
-                if (previousState === 0 && !this.element.matches(':hover')) {
+                if (revertTarget === 0 && !this.element.matches(':hover')) {
                     this.isExpanded = false;
                 }
-                this._applyState(previousState);
+                this._applyState(revertTarget, false); // Non triggera l'azione quando ci torna in automatico
             }, s.autoRevertDelay);
+        }
+    }
+
+    nextState() {
+        if (this.currentState < this.states.length - 1) {
+            this._applyState(this.currentState + 1, true);
+        } else if (this.states[this.currentState].loopOnClick) {
+            this._applyState(0, true);
         }
     }
 
     _attachEvents() {
         this.element.addEventListener('mouseenter', () => {
+            if (this.isDisabled) return;
+
+            // Brucia lo stato iniziale (lo applica visivamente ma senza lanciare action)
+            if (this.isInitialStateActive) {
+                this.isInitialStateActive = false;
+                this._applyState(0, false);
+            }
+
+            const s = this.states[this.currentState];
+
+            // SE IL TRIGGER È L'HOVER, SCATTA LO STATO SUCCESSIVO
+            if (s && s.triggerToNext === 'hover') {
+                this.nextState();
+            }
+
             if (!this.reactOnHover) return;
             clearTimeout(this.hoverLeaveTimer);
 
-            const s = this.states[this.currentState];
             this.hoverEnterTimer = setTimeout(() => {
                 this.isExpanded = true;
                 this.element.classList.add('is-expanded');
-            }, s.hoverEnterDelay || 150);
+            }, s?.hoverEnterDelay || 150);
         });
 
         this.element.addEventListener('mouseleave', () => {
+            if (this.isDisabled) return;
+
             clearTimeout(this.hoverEnterTimer);
             const s = this.states[this.currentState];
 
             this.hoverLeaveTimer = setTimeout(() => {
-                // In HoverLeave collassiamo l'elemento, ma NON resettiamo lo stato (ci pensa l'AutoRevert)
                 this.isExpanded = false;
                 this.element.classList.remove('is-expanded');
-            }, s.hoverLeaveDelay || 600);
+            }, s?.hoverLeaveDelay || 600);
         });
 
         this.element.addEventListener('click', (e) => {
             e.stopPropagation();
+            if (this.isDisabled) return;
+
+            if (this.clickFeedback) {
+                this.element.classList.add('is-clicked');
+                setTimeout(() => this.element.classList.remove('is-clicked'), 150);
+            }
+
+            if (this.isInitialStateActive) {
+                this.isInitialStateActive = false;
+                this._applyState(0, false);
+            }
 
             if (!this.isExpanded) {
-                // Se è chiuso e ho il reactOnHover disattivato, il primo click lo espande solo.
                 this.isExpanded = true;
                 this.element.classList.add('is-expanded');
                 return;
             }
 
-            if (this.currentState === 0) {
-                this._applyState(1);
-                this.onState1();
-            } else if (this.currentState === 1) {
-                this._applyState(2);
-                this.onState2();
+            const s = this.states[this.currentState];
+
+            // SE IL TRIGGER È IL CLICK (O di default se omesso)
+            if (!s.triggerToNext || s.triggerToNext === 'click') {
+                this.nextState();
             }
         });
     }
 
     getNode() { return this.element; }
 
-    // Genera un template di base se l'utente non passa l'array config.states
     _getDefaultStates() {
         return [
             // STATO 0: Normale

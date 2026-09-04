@@ -1,0 +1,76 @@
+/* frontend/css/dashboard/ui_global_bar.css */
+
+#av-global-bar {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    flex-shrink: 0;
+}
+
+.av-global-bar-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    height: var(--gb-height, 64px);
+    padding: var(--gb-padding, 0 16px);
+
+    background: var(--gb-bg, rgba(255, 255, 255, 0.03));
+    border: var(--gb-border, 1px solid rgba(255, 255, 255, 0.08));
+    border-radius: var(--gb-radius, 24px);
+    box-shadow: var(--gb-shadow, none);
+
+    min-width: var(--gb-compact-width, 220px);
+    width: fit-content;
+    max-width: 100%;
+
+    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Zone Sinistra e Destra */
+.av-global-bar__left,
+.av-global-bar__right {
+    display: flex;
+    align-items: center;
+    gap: var(--gb-inner-gap, 12px);
+    flex-shrink: 0;
+}
+
+/* L'UNICO MARGINE NECESSARIO: Fornisce i 24px di stacco a destra della zona sinistra */
+.av-global-bar__left {
+    margin-right: var(--gb-gap, 24px);
+}
+
+/* Zona Centrale (Scroll Menu) */
+.av-global-bar__center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 1 0px;
+    margin-right: 0px; /* Azzerato da chiuso */
+    opacity: 0;
+    overflow: hidden;
+    pointer-events: none;
+
+    transition: flex-basis 0.5s cubic-bezier(0.34, 1.5, 0.64, 1),
+    margin-right 0.5s cubic-bezier(0.34, 1.5, 0.64, 1),
+    opacity 0.4s ease;
+}
+
+/* STATO ESPANSO */
+.av-global-bar-inner.is-expanded .av-global-bar__center {
+    flex: 1 1 100vw;
+    /* Quando si apre, accende i 24px per distaccarsi dal bottone di Destra (Power) */
+    margin-right: var(--gb-gap, 24px);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Rotazione Hamburger Menu */
+.av-btn-hamburger .main-icon {
+    transition: transform 0.3s ease;
+}
+body.menu-open .av-btn-hamburger .main-icon {
+    transform: rotate(90deg);
+}
