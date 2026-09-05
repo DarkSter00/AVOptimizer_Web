@@ -18,10 +18,20 @@ export class AVScrollMenu {
 
         this.items = [];
         this.activeIndex = 0;
+        this.cardGap = config.cardGap !== undefined ? config.cardGap : 8;
+        this.shrunkMargin = config.shrunkMargin !== undefined ? config.shrunkMargin : -10;
+
+        this.lastActiveIndex = -1; // Usato per ottimizzare i calcoli
 
         this._initDOM();
         this._attachHoverEvents();
         this._attachWheelEvent();
+
+        // Osserva il contenitore padre per ricalcolare il centro in tempo reale durante i ridimensionamenti
+        this.resizeObserver = new ResizeObserver(() => {
+            requestAnimationFrame(() => this._recenterActiveItem(true)); // true = scroll istantaneo senza lag visivi
+        });
+        if (this.container) this.resizeObserver.observe(this.container);
     }
 
     _initDOM() {
@@ -35,6 +45,9 @@ export class AVScrollMenu {
         this.wrapPrev = this.container.querySelector('#av-sm-wrap-prev');
         this.wrapNext = this.container.querySelector('#av-sm-wrap-next');
         this.track = this.container.querySelector('#av-sm-track');
+
+        this.track.style.setProperty('--card-gap', `${this.cardGap}px`);
+        this.track.style.setProperty('--shrunk-margin', `${this.shrunkMargin}px`);
 
         this.btnPrev = new AVButton(this.btnPrevConfig);
         this.btnNext = new AVButton(this.btnNextConfig);
@@ -51,31 +64,40 @@ export class AVScrollMenu {
     }
 
     _attachHoverEvents() {
+        this.isPrevHovered = false;
+        this.isNextHovered = false;
+
         this.btnPrev.getNode().addEventListener('mouseenter', () => {
-            if (this.activeIndex > 0) {
-                const prevItem = this.track.children[this.activeIndex - 1];
-                if (prevItem) prevItem.classList.add('preview-target');
-            }
+            this.isPrevHovered = true;
+            this._refreshHoverPreview();
         });
         this.btnPrev.getNode().addEventListener('mouseleave', () => {
-            if (this.activeIndex > 0) {
-                const prevItem = this.track.children[this.activeIndex - 1];
-                if (prevItem) prevItem.classList.remove('preview-target');
-            }
+            this.isPrevHovered = false;
+            this._refreshHoverPreview();
         });
 
         this.btnNext.getNode().addEventListener('mouseenter', () => {
-            if (this.activeIndex < this.items.length - 1) {
-                const nextItem = this.track.children[this.activeIndex + 1];
-                if (nextItem) nextItem.classList.add('preview-target');
-            }
+            this.isNextHovered = true;
+            this._refreshHoverPreview();
         });
         this.btnNext.getNode().addEventListener('mouseleave', () => {
-            if (this.activeIndex < this.items.length - 1) {
-                const nextItem = this.track.children[this.activeIndex + 1];
-                if (nextItem) nextItem.classList.remove('preview-target');
-            }
+            this.isNextHovered = false;
+            this._refreshHoverPreview();
         });
+    }
+
+    _refreshHoverPreview() {
+        if (!this.track) return;
+        Array.from(this.track.children).forEach(c => c.classList.remove('preview-target'));
+
+        if (this.isPrevHovered && this.activeIndex > 0) {
+            const prevItem = this.track.children[this.activeIndex - 1];
+            if (prevItem) prevItem.classList.add('preview-target');
+        }
+        if (this.isNextHovered && this.activeIndex < this.items.length - 1) {
+            const nextItem = this.track.children[this.activeIndex + 1];
+            if (nextItem) nextItem.classList.add('preview-target');
+        }
     }
 
     _attachWheelEvent() {
@@ -94,79 +116,162 @@ export class AVScrollMenu {
     }
 
     render() {
-        this.track.innerHTML = '';
+        // RENDERING INTELLIGENTE (SMART UPDATE)
+        // Evita di distruggere il DOM 5 volte al secondo bloccando le animazioni CSS!
+        let requiresFullRender = false;
 
-        this.items.forEach((item, index) => {
-            const el = document.createElement('div');
-            el.className = `av-scroll-menu-item ${item.themeClass || 'theme-pending'}`;
+        if (this.track.children.length !== this.items.length) {
+            requiresFullRender = true;
+        } else {
+            for (let i = 0; i < this.items.length; i++) {
+                if (this.track.children[i].dataset.id !== this.items[i].id) {
+                    requiresFullRender = true;
+                    break;
+                }
+            }
+        }
 
-            if (index === this.activeIndex) el.classList.add('is-active');
+        if (requiresFullRender) {
+            // Costruzione da zero (con Animazione di ingresso 'is-entering')
+            this.track.innerHTML = '';
 
-            el.innerHTML = `
-                <i class="${item.mainIcon || 'fa-solid fa-folder-tree'}"></i>
-                <span>${item.label}</span>
-                ${item.statusIcon ? `<i class="${item.statusIcon}"></i>` : ''}
-            `;
+            this.items.forEach((item, index) => {
+                const el = document.createElement('div');
+                // Aggiungiamo 'is-entering' per avviare il Keyframe CSS!
+                el.className = `av-scroll-menu-item is-entering ${item.themeClass || 'theme-pending'}`;
+                el.dataset.id = item.id;
 
-            el.addEventListener('mousedown', () => el.style.transform = 'scale(0.85)');
-            el.addEventListener('click', () => {
-                Array.from(this.track.children).forEach(c => c.classList.remove('preview-target'));
-                el.style.transform = '';
-                this.onItemClick(item, index);
+                if (index === this.activeIndex) el.classList.add('is-active');
+
+                el.innerHTML = `
+                    <i class="${item.mainIcon || 'fa-solid fa-folder-tree'}"></i>
+                    <span>${item.label}</span>
+                    ${item.statusIcon ? `<i class="${item.statusIcon}"></i>` : ''}
+                `;
+
+                el.addEventListener('mousedown', () => el.style.transform = 'scale(0.85)');
+                el.addEventListener('click', () => {
+                    Array.from(this.track.children).forEach(c => c.classList.remove('preview-target'));
+                    el.style.transform = '';
+                    this.onItemClick(item, index);
+                });
+
+                this.track.appendChild(el);
+
+                // Rimuoviamo la classe di animazione dopo 1 secondo per non intaccare gli hover successivi
+                setTimeout(() => el.classList.remove('is-entering'), 1000);
             });
+        } else {
+            // Aggiornamento Silenzioso: Tocca solo le classi e l'HTML interno
+            this.items.forEach((item, index) => {
+                const el = this.track.children[index];
 
-            this.track.appendChild(el);
-        });
+                let newClass = `av-scroll-menu-item ${item.themeClass || 'theme-pending'}`;
+                // Manteniamo la classe is-entering se sta ancora venendo su
+                if (el.classList.contains('is-entering')) newClass += ' is-entering';
+                if (index === this.activeIndex) newClass += ' is-active';
 
-        requestAnimationFrame(() => {
-            this._updateButtonsVisibility();
+                if (el.className !== newClass) el.className = newClass;
+
+                const newHtml = `
+                    <i class="${item.mainIcon || 'fa-solid fa-folder-tree'}"></i>
+                    <span>${item.label}</span>
+                    ${item.statusIcon ? `<i class="${item.statusIcon}"></i>` : ''}
+                `;
+                if (el.innerHTML !== newHtml) {
+                    el.innerHTML = newHtml;
+                }
+            });
+        }
+
+        // Calcolo Scroll Infallibile
+        setTimeout(() => {
+            //this._updateButtonsVisibility();
+            //this._refreshHoverPreview();
+            this._recenterActiveItem(false);
+/*
             if (this.centerActive && this.items.length > 0) {
                 const trackWidth = this.container.clientWidth;
                 const activeEl = this.track.children[this.activeIndex] || this.track.children[0];
                 const itemWidth = activeEl.offsetWidth;
-
                 const pad = Math.max(0, (trackWidth / 2) - (itemWidth / 2));
+
                 this.track.style.paddingLeft = `${pad}px`;
                 this.track.style.paddingRight = `${pad}px`;
-
                 this._scrollToActive(activeEl);
+            } else if (this.items.length > 0) {
+                this._scrollToActive(this.track.children[this.activeIndex]);
             }
-        });
+
+ */
+        }, 50);
     }
 
     _updateButtonsVisibility() {
-        const needsScroll = this.track.scrollWidth > this.track.clientWidth;
+        const hasPrev = this.activeIndex > 0;
+        const hasNext = this.activeIndex < this.items.length - 1;
 
-        if (this.hideDisabledButtons && !needsScroll) {
-            this.wrapPrev.classList.add('is-hidden');
-            this.wrapNext.classList.add('is-hidden');
-            return;
+        if (!hasPrev && this.hideDisabledButtons) this.wrapPrev.classList.add('is-hidden');
+        else {
+            this.wrapPrev.classList.remove('is-hidden');
+            if (!hasPrev) this.wrapPrev.classList.add('is-disabled');
+            else this.wrapPrev.classList.remove('is-disabled');
         }
 
-        if (this.activeIndex <= 0) {
-            this.hideDisabledButtons ? this.wrapPrev.classList.add('is-hidden') : this.wrapPrev.classList.add('is-disabled');
-        } else {
-            this.wrapPrev.classList.remove('is-disabled', 'is-hidden');
-        }
-
-        if (this.activeIndex >= this.items.length - 1) {
-            this.hideDisabledButtons ? this.wrapNext.classList.add('is-hidden') : this.wrapNext.classList.add('is-disabled');
-        } else {
-            this.wrapNext.classList.remove('is-disabled', 'is-hidden');
+        if (!hasNext && this.hideDisabledButtons) this.wrapNext.classList.add('is-hidden');
+        else {
+            this.wrapNext.classList.remove('is-hidden');
+            if (!hasNext) this.wrapNext.classList.add('is-disabled');
+            else this.wrapNext.classList.remove('is-disabled');
         }
     }
 
-    _scrollToActive(activeEl) {
-        if (!activeEl) return;
-        requestAnimationFrame(() => {
-            // Calcolo infallibile della centratura basato sui pixel effettivi a schermo
-            const trackRect = this.track.getBoundingClientRect();
-            const elRect = activeEl.getBoundingClientRect();
-            const trackCenter = trackRect.left + (trackRect.width / 2);
-            const elCenter = elRect.left + (elRect.width / 2);
-            const scrollDiff = elCenter - trackCenter;
+    _recenterActiveItem(instant = false) {
+        if (!this.track || this.items.length === 0) return;
 
-            this.track.scrollBy({ left: scrollDiff, behavior: 'smooth' });
-        });
+        this._updateButtonsVisibility();
+        this._refreshHoverPreview();
+
+        const activeEl = this.track.children[this.activeIndex] || this.track.children[0];
+        if (!activeEl) return;
+
+        if (this.centerActive) {
+            this.track.classList.add('is-centered');
+            // 1. Sblocco del Flexbox: azzeriamo il padding in modo che la traccia si comprima allo spazio reale
+            //this.track.style.paddingLeft = '0px';
+            //this.track.style.paddingRight = '0px';
+
+            // Passiamo la larghezza della scheda al CSS SOLO se la scheda cambia (Zero Lag!)
+            if (this.lastActiveIndex !== this.activeIndex) {
+                const itemWidth = activeEl.offsetWidth;
+                this.track.style.setProperty('--active-item-width', `${itemWidth}px`);
+                this.lastActiveIndex = this.activeIndex;
+            }
+
+            /*
+            // 2. Lettura dello spazio reale concesso dalla barra esterna
+            const trackWidth = this.track.clientWidth;
+            const itemWidth = activeEl.offsetWidth;
+            const pad = Math.max(0, (trackWidth / 2) - (itemWidth / 2));
+
+            // 3. Riapplichiamo il padding matematicamente corretto
+            this.track.style.paddingLeft = `${pad}px`;
+            this.track.style.paddingRight = `${pad}px`;
+
+             */
+        }
+
+        // Calcolo millimetrico dello scroll necessario
+        const trackRect = this.track.getBoundingClientRect();
+        const elRect = activeEl.getBoundingClientRect();
+
+        const trackCenter = trackRect.left + (trackRect.width / 2);
+        const elCenter = elRect.left + (elRect.width / 2);
+        const scrollDiff = elCenter - trackCenter;
+
+        if (Math.abs(scrollDiff) > 1) {
+            // Utilizziamo lo smooth scroll nativo via JS solo per i click, rendendolo istantaneo durante l'allargamento della barra
+            this.track.scrollBy({ left: scrollDiff, behavior: instant ? 'auto' : 'smooth' });
+        }
     }
 }

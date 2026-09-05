@@ -2,23 +2,42 @@
 import { AVButton } from "../components/AVButton/AVButton.js";
 import { AVScrollMenu } from "../components/AVScrollMenu/AVScrollMenu.js";
 import { AVDashboardGlobalBar } from "./dashboard/ui_global_bar.js";
+import { AVDashboardGlobalSideMenu } from "../components/dashboard/AVDashboardGlobalSideMenu/AVDashboardGlobalSideMenu.js";
+import { AVAppLogo} from "../components/AVAppLogo/AVAppLogo.js";
+import { AVMenuButton} from "../components/AVMenuButton/AVMenuButton.js";
+import { AVMenuInfoBox} from "../components/AVMenuInfoBox/AVMenuInfoBox.js";
 
 window.btnAddFolderGlobal = null;
 window.coreMenu = null;
 window.globalBar = null;
+window.globalSideMenu = null;
+window.coreTransitionTimer = null;
+
+let isBooting = true; // Blocca la UI finché il timer non scatta
 
 // =========================================================================
-// 1. INIZIALIZZAZIONE STRUTTURA BASE
+// 1. SISTEMA DI BOOT CON TIMER FORZATO (1 SECONDO)
 // =========================================================================
 document.addEventListener("DOMContentLoaded", () => {
-    initGlobalButtons();
+    console.log("Avvio timer di 1 secondo in attesa dei dati dal WebSocket...");
+
+    setTimeout(() => {
+        // Dopo 1 secondo esatto, la variabile coreList sarà popolata dal WebSocket.
+        // Costruiamo l'interfaccia con la certezza dei dati reali.
+        initGlobalButtons();
+        initGlobalSideMenu();
+        isBooting = false;
+        window.syncDashboardState();
+    }, 1000);
 });
 
 function createScrollMenu() {
     return new AVScrollMenu({
         containerId: 'global-bar-center-zone',
         centerActive: true,
-        hideDisabledButtons: true,
+        cardGap: 8,
+        shrunkMargin: -10,
+        hideDisabledButtons: false,
         btnPrevConfig: {
             direction: 'left', height: 38,
             states: [{ icon: 'fa-solid fa-chevron-left', text: '', pillIcon: '', width: 38, colors: { buttonBg: 'rgba(255,255,255,0.05)', buttonBorder: 'var(--border)', icon: '#fff', pillBg: 'transparent', pillBorder: 'transparent', pillText: 'transparent' } }]
@@ -34,6 +53,8 @@ function createScrollMenu() {
 }
 
 function initGlobalButtons() {
+    const hasCores = coreList && coreList.length > 0;
+
     const btnMenu = new AVButton({
         direction: 'right', height: 42,
         states: [{
@@ -45,7 +66,7 @@ function initGlobalButtons() {
     });
     btnMenu.getNode().classList.add('av-btn-hamburger');
 
-    // NIENTE initialState. Il bottone nasce con la sua forma standard definitiva.
+    // RIMOSSO initialState: nasce direttamente nello stato normale
     window.btnAddFolderGlobal = new AVButton({
         direction: 'right', height: 42,
         states: [
@@ -98,34 +119,130 @@ function initGlobalButtons() {
         leftItems: [btnMenu, window.btnAddFolderGlobal],
         centerItems: [],
         rightItems: [btnResetAllGlobal],
-        expanded: false // Di default chiusa, sarà syncDashboardState ad aprirla
+        expanded: hasCores
     });
+
+    if (hasCores) {
+        window.coreMenu = createScrollMenu();
+    }
+}
+
+function initGlobalSideMenu() {
+    const appLogo = new AVAppLogo({
+        title: "A/V Optimizer",
+        version: "v8.5 Core",
+        icon: "fa-solid fa-layer-group",
+        styles: {
+            iconColor: 'var(--primary)',
+            border: 'var(--primary)'
+        }
+    });
+
+    const btnFolders = new AVMenuButton({
+        label: "Workspace Cartelle",
+        icon: "fa-solid fa-folder-tree",
+        badge: "3 Attive",
+        isActive: true,
+        styles: {
+            activeBg: 'rgba(59, 130, 246, 0.1)',
+            activeColor: 'var(--primary)',
+            activeBorder: 'var(--primary)'
+        },
+        onClick: () => console.log("Vai a cartelle")
+    });
+
+    const btnSettings = new AVMenuButton({
+        label: "Impostazioni Sistema",
+        icon: "fa-solid fa-gear",
+        styles: {
+            hoverBg: 'rgba(255,255,255,0.05)'
+        },
+        onClick: () => console.log("Apri impostazioni")
+    });
+
+    const systemInfo = new AVMenuInfoBox({
+        title: "Stato Disco Globale",
+        icon: "fa-solid fa-server",
+        styles: {
+            bg: 'rgba(0,0,0,0.2)',
+            border: '1px solid rgba(255,255,255,0.05)'
+        },
+        contentHTML: `
+            <div class="av-menu-infobox__stat-row">
+                <span>Spazio Libero</span>
+                <strong style="color: var(--success)">1.2 TB</strong>
+            </div>
+            <div class="av-menu-infobox__stat-row">
+                <span>Spazio Salvato</span>
+                <strong style="color: var(--primary)">450 GB</strong>
+            </div>
+        `
+    });
+
+    window.globalSideMenu = new AVDashboardGlobalSideMenu({
+        containerId: 'av-global-menu',
+        backgroundColor: 'var(--bg-panel, #1e293b)',
+        items: {
+            top: [appLogo],
+            center: [btnFolders, btnSettings],
+            bottom: [systemInfo]
+        }
+    });
+
+    let peekTimer = null; // Gestore del timer per l'anteprima
+
+    const hamburgerNode = document.querySelector('.av-btn-hamburger');
+    if (hamburgerNode) {
+
+        // HOVER (Entrata): Inizia a contare 3 secondi
+        hamburgerNode.addEventListener('mouseenter', () => {
+            if (!document.body.classList.contains('menu-open')) {
+                peekTimer = setTimeout(() => {
+                    document.body.classList.add('menu-peek');
+                }, 3000); // 3000ms = 3 secondi di attesa
+            }
+        });
+
+        // LEAVE (Uscita): Azzera il timer e ritira il peek fluidamente
+        hamburgerNode.addEventListener('mouseleave', () => {
+            clearTimeout(peekTimer);
+            document.body.classList.remove('menu-peek');
+        });
+
+        // CLICK: Azzera il timer, rimuove il peek e apre il menu grande fluidamente
+        hamburgerNode.addEventListener('click', (e) => {
+            e.stopPropagation();
+            clearTimeout(peekTimer);
+            document.body.classList.remove('menu-peek');
+            if (window.globalSideMenu) window.globalSideMenu.toggle();
+        });
+    }
 }
 
 // =========================================================================
-// 2. MOTORE DI SINCRONIZZAZIONE
+// 2. SINCRONIZZAZIONE STATO E RENDERING MENU
 // =========================================================================
 window.syncDashboardState = function() {
+    if (isBooting || !window.globalBar) return;
+
     const hasCores = coreList && coreList.length > 0;
 
     if (hasCores) {
         document.body.classList.add('has-cores');
-        if (window.globalBar) window.globalBar.setExpanded(true);
+        window.globalBar.setExpanded(true);
 
         if (!window.coreMenu) {
             window.coreMenu = createScrollMenu();
         }
 
-        // Togliamo l'effetto attenzione dal pulsante aggiungi
         if (window.btnAddFolderGlobal) {
             window.btnAddFolderGlobal.getNode().classList.remove('pulse-primary');
         }
     } else {
         document.body.classList.remove('has-cores');
-        if (window.globalBar) window.globalBar.setExpanded(false);
+        window.globalBar.setExpanded(false);
         if (window.coreMenu) window.coreMenu.updateItems([], 0);
 
-        // Accendiamo il lampeggiamento CSS per attirare l'attenzione sul bottone standard
         if (window.btnAddFolderGlobal) {
             window.btnAddFolderGlobal.getNode().classList.add('pulse-primary');
         }
@@ -194,9 +311,11 @@ window.updateAllCoreStates = function() {
 };
 
 // =========================================================================
-// 3. AGGIORNAMENTO DATI IN TEMPO REALE E ANIMAZIONI DEL CANVAS
+// 3. WEBSOCKET E AGGIORNAMENTI IN TEMPO REALE
 // =========================================================================
 window.updateDashboard = function(metrics) {
+    if (isBooting) return; // Se il timer da 1 secondo è ancora in corso, blocca il render grafico
+
     const g = metrics.global;
 
     if (g.is_paused !== undefined && isPaused !== g.is_paused) {
@@ -260,22 +379,30 @@ window.resetAllConfirm = async function() {
 
 window.changeCoreWithAnimation = function(newIndex) {
     if (currentCoreIndex !== newIndex && newIndex >= 0 && newIndex < coreList.length) {
-        if (window.isTransitioningCore) return;
-        window.isTransitioningCore = true;
-        currentCoreIndex = newIndex;
 
+        // 1. Aggiornamento Immediato per AVScrollMenu (Reattività istantanea ai click!)
+        currentCoreIndex = newIndex;
         window.updateAllCoreStates();
 
+        // 2. Gestione Debounce per l'animazione del Canvas
         const canvasWrapper = document.getElementById('canvas-scroll-wrapper');
-        if(canvasWrapper) canvasWrapper.classList.add('canvas-hidden');
 
-        setTimeout(() => {
+        if (!window.isTransitioningCore) {
+            window.isTransitioningCore = true;
+            if(canvasWrapper) canvasWrapper.classList.add('canvas-hidden');
+        } else {
+            // Se l'utente clicca ripetutamente, puliamo il timer e lo allunghiamo
+            clearTimeout(window.coreTransitionTimer);
+        }
+
+        // 3. Render finale solo quando l'utente si ferma su una cartella (350ms dopo l'ultimo click)
+        window.coreTransitionTimer = setTimeout(() => {
             expandedCards.clear();
             userOpenedCards.clear();
             if (lastMetrics) window.processRenderLogic(lastMetrics);
             window.isTransitioningCore = false;
             if(canvasWrapper) canvasWrapper.classList.remove('canvas-hidden');
-        }, 400);
+        }, 350);
     }
 };
 

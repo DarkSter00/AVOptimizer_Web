@@ -127,15 +127,28 @@ window.processRenderLogic = function(metrics) {
         isBuildingCanvas = true;
         if(uiLoadingOverlay) uiLoadingOverlay.classList.remove("hidden");
         let idx = 0; const CHUNK_SIZE = 15;
+
         requestAnimationFrame(() => {
             requestAnimationFrame(function buildChunk() {
                 const chunk = keysToCreate.slice(idx, idx + CHUNK_SIZE);
+
+                // CREAZIONE DEI FRAMMENTI IN MEMORIA
+                const frag0 = document.createDocumentFragment();
+                const frag1 = document.createDocumentFragment();
+
                 chunk.forEach(subPath => {
                     const globalIndex = subfolderKeys.indexOf(subPath);
-                    const targetCol = globalIndex % 2 === 0 ? col0 : col1;
-                    createCardDOM(subPath, activeCoreName, targetCol);
+                    const targetFrag = globalIndex % 2 === 0 ? frag0 : frag1;
+
+                    // Passiamo il frammento invece della colonna reale
+                    createCardDOM(subPath, activeCoreName, targetFrag);
                     updateCardData(subPath, subfolders[subPath], getSafeId(subPath));
                 });
+
+                // APPEND AL DOM IN UN SINGOLO COLPO
+                if (col0) col0.appendChild(frag0);
+                if (col1) col1.appendChild(frag1);
+
                 idx += CHUNK_SIZE;
                 let pct = (idx / keysToCreate.length) * 100;
                 if(uiBuilderBg) uiBuilderBg.style.width = `${pct > 100 ? 100 : pct}%`;
@@ -152,11 +165,22 @@ window.processRenderLogic = function(metrics) {
             });
         });
     } else if (!isBuildingCanvas) {
+        // CREAZIONE DEI FRAMMENTI IN MEMORIA PER CARICAMENTI MINORI
+        const frag0 = document.createDocumentFragment();
+        const frag1 = document.createDocumentFragment();
+
         keysToCreate.forEach(subPath => {
             const globalIndex = subfolderKeys.indexOf(subPath);
-            const targetCol = globalIndex % 2 === 0 ? col0 : col1;
-            createCardDOM(subPath, activeCoreName, targetCol);
+            const targetFrag = globalIndex % 2 === 0 ? frag0 : frag1;
+
+            // Passiamo il frammento invece della colonna reale
+            createCardDOM(subPath, activeCoreName, targetFrag);
         });
+
+        // APPEND AL DOM IN UN SINGOLO COLPO
+        if (col0) col0.appendChild(frag0);
+        if (col1) col1.appendChild(frag1);
+
         subfolderKeys.forEach(subPath => updateCardData(subPath, subfolders[subPath], getSafeId(subPath)));
         if(uiLoadingOverlay) uiLoadingOverlay.classList.add("hidden");
     }

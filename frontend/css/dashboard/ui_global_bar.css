@@ -4,67 +4,78 @@
     display: flex;
     justify-content: center;
     width: 100%;
+    max-width: 100%;
     flex-shrink: 0;
+    box-sizing: border-box;
 }
 
 .av-global-bar-inner {
     display: flex;
     align-items: center;
     justify-content: space-between;
-
     height: var(--gb-height, 64px);
     padding: var(--gb-padding, 0 16px);
-
     background: var(--gb-bg, rgba(255, 255, 255, 0.03));
     border: var(--gb-border, 1px solid rgba(255, 255, 255, 0.08));
-    border-radius: var(--gb-radius, 24px);
+    border-radius: var(--gb-radius, 32px);
     box-shadow: var(--gb-shadow, none);
 
-    min-width: var(--gb-compact-width, 220px);
-    width: fit-content;
+    width: auto;
     max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
 
-    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    /* Gap costante tra le sezioni interne per evitare che si tocchino */
+    gap: var(--gb-gap, 16px);
+
+    transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background-color 0.4s ease,
+    border-color 0.4s ease,
+    box-shadow 0.4s ease;
+}
+
+/* STATO ESPANSO DELLA BARRA */
+.av-global-bar-inner.is-expanded {
+    width: 100%;
+    max-width: 100vw;
+    gap: var(--gb-gap, 24px);
 }
 
 /* Zone Sinistra e Destra */
-.av-global-bar__left,
-.av-global-bar__right {
+.av-global-bar__left, .av-global-bar__right {
     display: flex;
     align-items: center;
     gap: var(--gb-inner-gap, 12px);
     flex-shrink: 0;
 }
 
-/* L'UNICO MARGINE NECESSARIO: Fornisce i 24px di stacco a destra della zona sinistra */
-.av-global-bar__left {
-    margin-right: var(--gb-gap, 24px);
-}
-
 /* Zona Centrale (Scroll Menu) */
 .av-global-bar__center {
     display: flex;
-    align-items: center;
+    flex: 1;           /* Ripristinato il flex di base */
+    min-width: 0;      /* Ripristinato il min-width */
+    height: 100%;
     justify-content: center;
-
-    flex: 0 1 0px;
-    margin-right: 0px; /* Azzerato da chiuso */
+    align-items: center;
     opacity: 0;
-    overflow: hidden;
     pointer-events: none;
-
-    transition: flex-basis 0.5s cubic-bezier(0.34, 1.5, 0.64, 1),
-    margin-right 0.5s cubic-bezier(0.34, 1.5, 0.64, 1),
-    opacity 0.4s ease;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
-/* STATO ESPANSO */
+/* LA NUOVA CLASSE SQUISHABLE UNIVERSALE PER LA BARRA */
+.av-global-bar-inner.is-expanded .is-squishable {
+    flex: 1 1 0px;  /* Occupa lo spazio disponibile ma accetta di restringersi a 0 */
+    min-width: 0;   /* CRUCIALE: Permette di schiacciarsi sotto la larghezza dei propri figli */
+    width: 100%;
+}
+
+/* STATO ESPANSO CENTRO */
 .av-global-bar-inner.is-expanded .av-global-bar__center {
-    flex: 1 1 100vw;
-    /* Quando si apre, accende i 24px per distaccarsi dal bottone di Destra (Power) */
-    margin-right: var(--gb-gap, 24px);
     opacity: 1;
     pointer-events: auto;
+    visibility: visible;
+    transition-delay: 0.15s;
 }
 
 /* Rotazione Hamburger Menu */

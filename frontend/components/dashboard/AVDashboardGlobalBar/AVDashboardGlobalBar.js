@@ -2,40 +2,48 @@
 
 export class AVDashboardGlobalBar {
     constructor(config) {
-        // Parametri Strutturali e di Stile (con valori di default)
+        this.container = document.getElementById(config.containerId);
+        if (!this.container) return;
+
         this.height = config.height || '64px';
         this.padding = config.padding || '0 12px';
-        this.gap = config.gap || '16px';
+        this.gap = config.gap || '24px';
         this.innerGap = config.innerGap || '12px';
-        this.bg = config.bg || 'var(--bg-surface, rgba(255, 255, 255, 0.05))';
-        this.border = config.border || '1px solid var(--border, rgba(255, 255, 255, 0.1))';
-        this.radius = config.radius || '32px';
-        this.compactWidth = config.compactWidth || '220px'; // Larghezza da chiusa
 
-        // Contenuti passati dal parent
+        this.bg = config.bg || 'rgba(255, 255, 255, 0.03)';
+        this.border = config.border || '1px solid rgba(255, 255, 255, 0.08)';
+        this.radius = config.radius || '32px';
+        this.shadow = config.shadow || 'none';
+        this.compactWidth = config.compactWidth || '220px';
+
         this.leftItems = config.leftItems || [];
         this.centerItems = config.centerItems || [];
         this.rightItems = config.rightItems || [];
 
-        // Stato interno
+        // NUOVA IMPOSTAZIONE: Quali zone possono essere schiacciate dal Flexbox?
+        this.squishableZones = config.squishableZones || ['center'];
+
         this.isExpanded = config.expanded || false;
 
-        this.element = this._createDOM();
+        this._initDOM();
         this._applyStyles();
         this._renderItems();
 
         if (this.isExpanded) this.setExpanded(true);
     }
 
-    _createDOM() {
-        const bar = document.createElement('div');
-        bar.className = 'av-global-bar';
-        bar.innerHTML = `
-            <div class="av-global-bar__left"></div>
-            <div class="av-global-bar__center"></div>
-            <div class="av-global-bar__right"></div>
+    _initDOM() {
+        this.container.innerHTML = `
+            <div class="av-global-bar-inner">
+                <div class="av-global-bar__left"></div>
+                <div class="av-global-bar__center" id="global-bar-center-zone"></div>
+                <div class="av-global-bar__right"></div>
+            </div>
         `;
-        return bar;
+        this.inner = this.container.querySelector('.av-global-bar-inner');
+        this.leftZone = this.container.querySelector('.av-global-bar__left');
+        this.centerZone = this.container.querySelector('.av-global-bar__center');
+        this.rightZone = this.container.querySelector('.av-global-bar__right');
     }
 
     _applyStyles() {

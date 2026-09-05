@@ -1,0 +1,20 @@
+/* frontend/components/AVMenuInfoBox/AVMenuInfoBox.css */
+.av-menu-infobox {
+    background: var(--ib-bg, rgba(0, 0, 0, 0.2));
+    border: 1px solid var(--ib-border, rgba(255, 255, 255, 0.05));
+    border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px;
+}
+.av-menu-infobox__header {
+    display: flex; align-items: center; gap: 8px; font-size: 0.8rem;
+    text-transform: uppercase; letter-spacing: 1px; font-weight: 700;
+    color: var(--ib-header-color, #94a3b8);
+}
+.av-menu-infobox__content {
+    font-size: 0.9rem; line-height: 1.5;
+    color: var(--ib-content-color, #f3f4f6);
+}
+.av-menu-infobox__stat-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 4px 0; border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+}
+.av-menu-infobox__stat-row:last-child { border-bottom: none; }
