@@ -1,24 +1,22 @@
-// frontend/components/dashboard/AVDashboardGlobalSideMenu/AVDashboardGlobalSideMenu.js
+// frontend/components/dashboard/AVSideMenu/AVSideMenu.js
 
-export class AVDashboardGlobalSideMenu {
+export class AVSideMenu {
     constructor(config = {}) {
         this.containerId = config.containerId || 'av-global-menu';
         this.container = document.getElementById(this.containerId);
-
         this.title = config.title || "Menu";
         this.backgroundColor = config.backgroundColor || config.bg || 'rgba(255, 255, 255, 0.03)';
+        this.zoneStyles = config.zoneStyles || [];
         this.items = config.items || [];
         this.onItemClick = config.onItemClick || (() => {});
         this.onClose = config.onClose || (() => {});
-
         this.isOpen = false;
+
         this._initDOM();
     }
 
     _initDOM() {
         if (!this.container) return;
-
-        // Inserisce la variabile dello sfondo nel contenitore
         this.container.style.background = this.backgroundColor;
 
         this.container.innerHTML = `
@@ -30,6 +28,28 @@ export class AVDashboardGlobalSideMenu {
                 <div class="av-side-menu-footer" id="av-side-menu-footer-area" style="display: none;"></div>
             </div>
         `;
+
+        const headerArea = this.container.querySelector('.av-side-menu-header');
+        const bodyArea = this.container.querySelector('#av-side-menu-content-area');
+        const footerArea = this.container.querySelector('#av-side-menu-footer-area');
+
+        // Funzione helper con parametri univoci per evitare ReferenceError
+        const applyZoneStyles = (element, styleConfig, prefix) => {
+            if (!styleConfig || !element) return;
+            if (styleConfig.padding) element.style.setProperty(`--sm-${prefix}-padding`, styleConfig.padding);
+            if (styleConfig.margin) element.style.setProperty(`--sm-${prefix}-margin`, styleConfig.margin);
+            if (styleConfig.bg) element.style.setProperty(`--sm-${prefix}-bg`, styleConfig.bg);
+            if (styleConfig.border) element.style.setProperty(`--sm-${prefix}-border`, styleConfig.border);
+            if (styleConfig.gap) element.style.setProperty(`--sm-${prefix}-gap`, styleConfig.gap);
+        };
+
+        // Applica gli stili solo se l'oggetto zoneStyles è stato definito nella configurazione
+        if (this.zoneStyles) {
+            applyZoneStyles(headerArea, this.zoneStyles.top, 'top');
+            applyZoneStyles(bodyArea, this.zoneStyles.center, 'center');
+            applyZoneStyles(footerArea, this.zoneStyles.bottom, 'bottom');
+        }
+
         this.renderItems(this.items);
     }
 

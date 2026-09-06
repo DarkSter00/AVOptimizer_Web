@@ -12,11 +12,12 @@
     height: 100vh;
     display: flex;
     flex-direction: column;
-    padding: var(--app-padding); /* Applica i 5px a Top, Left e Right */
+    padding: var(--app-padding);
     gap: var(--app-padding);
     overflow: hidden;
-    background-color: #0f172a;
-    box-sizing: border-box; /* Assicura che il padding non sformi il 100vh della finestra */
+    /* Rimosso il blu #0f172a, applichiamo il nero di base del tema */
+    background-color: var(--bg-main);
+    box-sizing: border-box;
 }
 
 /* Stile comune a tutti e 3 i macro-riquadri */
@@ -28,7 +29,7 @@
 }
 
 /* ====================================================
-   1. AVDashboardGlobalBar
+   1. AVUpperBar
 ==================================================== */
 #av-global-bar {
     flex-shrink: 0;
@@ -106,15 +107,13 @@
 ==================================================== */
 #av-canvas {
     flex: 1;
-    min-width: 0; /* Fondamentale: permette al flexbox di restringersi */
+    min-width: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
 
-    /* SOVRASCRITTURA VISIVA:
-       Rendiamo il Canvas un'area di "lavoro" incassata e più scura,
-       staccandolo visivamente dal Menu Laterale e dalla Barra Superiore */
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(0, 0, 0, 0.3);
+    /* Applichiamo il grigio scuro (più chiaro dei menu) per far "sprofondare" il canvas */
+    background: var(--bg-card);
+    border: 1px solid var(--border);
     box-shadow: inset 0 8px 24px rgba(0, 0, 0, 0.25);
 }

@@ -1,0 +1,225 @@
+/* frontend/components/AVInfoCounterBox/AVInfoCounterBox.css */
+.av-info-counter {
+    position: relative;
+    background: var(--ic-bg, var(--bg-card));
+    border: 1px solid var(--ic-border, var(--border));
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    overflow: hidden;
+    user-select: none;
+
+    /* Prende spazio in modo uguale a prescindere da quanti sono */
+    flex: 1 1 0px;
+    min-width: 0;
+    min-height: 0px;
+
+    transition: max-width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    flex-basis 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    min-width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    padding 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    margin 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease,
+    transform 0.15s ease, filter 0.15s ease, background-color 0.3s ease;
+}
+
+.av-info-counter.is-entering {
+    animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+/* CLASSE DI ESPANSIONE (Forzata dal Container) */
+/* Elementi nativamente larghi tutta la riga */
+.av-info-counter.is-expanded {
+    flex-basis: 100%;
+    max-width: 100%;
+    background: color-mix(in srgb, var(--ic-bg, var(--bg-card)) 80%, white 5%);
+}
+
+.av-info-counter.is-full-width .av-info-counter__value {
+    font-size: 0.85rem;
+    font-weight: normal;
+    white-space: normal;
+    line-height: 1.4;
+}
+
+/* FRATELLI SCHIACCIATI (Qualsiasi box nella riga che NON è espanso) */
+.av-info-row:has(.is-expanded) .av-info-counter:not(.is-expanded) {
+    flex-basis: 0 !important;
+    max-width: 0 !important;
+    min-width: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    border-left-width: 0 !important;
+    border-right-width: 0 !important;
+    opacity: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+}
+
+/* --- LIVELLO BASE (Dati e Testi) --- */
+.av-info-counter__base {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: opacity 0.3s ease, filter 0.3s ease;
+    white-space: nowrap; /* CRUCIALE: Evita che il testo vada a capo rompendo l'altezza mentre si restringe */
+}
+@keyframes counterHoverFeedback {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(0.85); }
+}
+
+.av-info-counter__header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.70rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+}
+
+.av-info-counter__content-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+}
+
+.av-info-counter__value {
+    font-size: 1.1rem;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+/* Info aggiuntive nascoste di default */
+.av-info-counter__extra {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    max-width: 0;
+    opacity: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    transition: max-width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+}
+
+.av-info-counter.is-expanded .av-info-counter__extra {
+    max-width: 150px;
+    opacity: 1;
+}
+
+/* --- LIVELLO OVERLAY CON RIQUADRO (PILLOLA) --- */
+.av-info-counter__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    backdrop-filter: blur(3px);
+    transition: opacity 0.3s ease;
+    z-index: 10;
+}
+
+
+/* ACCENSIONE DEL BORDO: Quando il box cambia stato, il bordo prende il colore solido */
+.av-info-counter.has-overlay {
+    border-color: var(--ic-state-border, var(--primary)) !important;
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--ic-state-border, var(--primary)) 20%, transparent);
+}
+
+/* --- LIVELLO OVERLAY (Sfondo intero traslucido) --- */
+.av-info-counter__overlay {
+    position: absolute;
+    inset: 0;
+    /* Applica lo sfondo traslucido a tutta la scheda */
+    background: var(--ic-overlay-bg, rgba(0, 0, 0, 0.4));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    backdrop-filter: blur(4px);
+    transition: opacity 0.3s ease, background-color 0.4s ease;
+    z-index: 10;
+}
+
+/* Rimossa la "pillola", diventa solo testo fluttuante */
+.overlay-inner-box {
+    /* Il riquadro prende il colore solido acceso, uguale al bordo della scheda */
+    background: var(--ic-state-border, var(--primary));
+    color: var(--ic-overlay-color, #fff);
+
+    padding: 5px 14px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+
+    /* Contenimento stringente: il riquadro non può superare la larghezza della scheda */
+    max-width: 90%;
+
+    transform: translateY(10px) scale(0.95);
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.3s ease, background-color 0.4s ease, color 0.4s ease;
+}
+
+.overlay-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.av-info-counter.has-overlay .av-info-counter__base {
+    opacity: 0.2; /* Lo sfuma ancora di più per far risaltare il testo */
+    filter: blur(3px);
+}
+
+.av-info-counter.has-overlay .av-info-counter__overlay {
+    opacity: 1;
+}
+
+.av-info-counter.has-overlay .overlay-inner-box {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+}
+
+/* Leggero rimbalzo del testo al cambio stato, senza ombre pesanti */
+@keyframes stateChangePulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+}
+
+.overlay-inner-box.state-pulse {
+    animation: stateChangePulse 0.3s ease-out;
+}
+/* --- FEEDBACK VISIVI: HOVER E CLICK --- */
+@keyframes counterHoverFeedback {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(0.80); }
+}
+
+.av-info-counter:hover:not(.is-clicked):not(.is-clicked) {
+    transform: scale(1.02);
+    animation: counterHoverFeedback 2s infinite ease-in-out;
+}
+
+.av-info-counter.is-clicked {
+    transform: scale(0.92) !important;
+    filter: brightness(0.6) !important;
+    animation: none !important;
+}

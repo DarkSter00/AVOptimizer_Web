@@ -1,0 +1,83 @@
+/* frontend/components/AVFolder/AVFolder.css */
+
+.av-folder-card {
+    width: 100%;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    padding: 15px;
+    gap: 15px;
+
+    /* Variabili Dinamiche collegate agli Stati */
+    background: var(--fld-bg, var(--bg-folder-attesa, rgba(156, 163, 175, 0.05)));
+    border: 2px solid var(--fld-border, var(--border));
+    box-shadow: var(--fld-shadow, 0 10px 30px rgba(0,0,0,0.2));
+    opacity: var(--fld-opacity, 1);
+    filter: var(--fld-filter, none);
+
+    /* Transizioni morbide per i cambi di stato */
+    transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.6s ease, border-color 0.4s ease, background-color 0.4s ease,
+    opacity 0.4s ease, filter 0.4s ease;
+    animation: popIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.av-folder-card:hover {
+    transform: translateY(-3px);
+    /* Usiamo il colore del bordo attivo per sfumare l'ombra in hover! */
+    box-shadow: 0 15px 40px rgba(0,0,0,0.4), 0 0 15px var(--fld-border, rgba(59, 130, 246, 0.1));
+    z-index: 10;
+}
+
+
+/* ==========================================
+   STRUTTURA INTERNA (Header, Midder, Footer)
+========================================== */
+.av-folder-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+/* Placeholder per il futuro AVTitleBox */
+.av-folder-title-placeholder {
+    flex-grow: 1;
+    height: 42px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--text-main);
+    cursor: pointer;
+}
+
+.av-folder-midder {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.av-folder-midder.is-open {
+    grid-template-rows: 1fr;
+}
+
+.av-folder-midder-content {
+    overflow: hidden;
+    min-height: 0;
+    /* Qui dentro finiranno i futuri AVFile e AVProcess */
+}
+
+.av-folder-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 30px;
+    /* Qui dentro finirà il futuro AVTabMenu */
+}

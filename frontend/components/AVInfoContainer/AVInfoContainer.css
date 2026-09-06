@@ -1,0 +1,34 @@
+/* frontend/components/AVInfoContainer/AVInfoContainer.css */
+
+.av-info-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+
+    /* Configurazione di Layout */
+    gap: var(--aic-row-gap, 8px);
+    padding: var(--aic-padding, 0);
+    margin: var(--aic-margin, 10px 0 0 0);
+
+    /* Nuovi Config: Sfondo, Bordo e Arrotondamento */
+    background-color: var(--aic-bg, transparent);
+    border: var(--aic-border, none);
+    border-radius: var(--aic-radius, 0px);
+
+    /* Assicura che i box figli non escano dal bordo curvo se non c'è padding */
+    overflow: hidden;
+}
+
+.av-info-row {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    gap: var(--aic-item-gap, 8px);
+    /* Animiamo il gap così quando scompare lo fa fluidamente */
+    transition: gap 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* MAGIA: Quando una riga contiene un box espanso, annulla il gap per cedergli il 100% dello spazio */
+.av-info-row:has(.is-expanded) {
+    gap: 0px;
+}

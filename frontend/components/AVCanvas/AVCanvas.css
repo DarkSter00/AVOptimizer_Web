@@ -1,0 +1,48 @@
+/* frontend/components/AVCanvas/AVCanvas.css */
+
+.av-canvas-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    background: var(--cv-bg, transparent);
+    border: var(--cv-border, none);
+    border-radius: var(--cv-radius, 0px);
+    padding: var(--cv-padding, 0px);
+}
+
+.av-canvas-topbar-zone {
+    flex-shrink: 0;
+    z-index: 20;
+    margin-bottom: var(--cv-topbar-margin, 0px);
+}
+
+.av-canvas-workspace {
+    flex-grow: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: row; /* CRUCIALE: Allinea le colonne orizzontalmente */
+    align-items: flex-start;
+    gap: var(--cv-col-gap, 30px);
+    padding: var(--cv-work-padding, 20px 30px 80px 30px);
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) transparent;
+}
+
+.av-canvas-workspace::-webkit-scrollbar {
+    width: 6px;
+}
+.av-canvas-workspace::-webkit-scrollbar-thumb {
+    background-color: var(--primary);
+    border-radius: 10px;
+}
+
+.av-canvas-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: var(--cv-item-gap, 30px);
+}

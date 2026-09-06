@@ -1,6 +1,6 @@
-// frontend/components/dashboard/AVDashboardGlobalBar/AVDashboardGlobalBar.js
+// frontend/components/dashboard/AVUpperBar/AVUpperBar.js
 
-export class AVDashboardGlobalBar {
+export class AVUpperBar {
     constructor(config) {
         this.container = document.getElementById(config.containerId);
         if (!this.container) return;
@@ -47,20 +47,20 @@ export class AVDashboardGlobalBar {
     }
 
     _applyStyles() {
-        this.element.style.setProperty('--gb-height', this.height);
-        this.element.style.setProperty('--gb-padding', this.padding);
-        this.element.style.setProperty('--gb-gap', this.gap);
-        this.element.style.setProperty('--gb-inner-gap', this.innerGap);
-        this.element.style.setProperty('--gb-bg', this.bg);
-        this.element.style.setProperty('--gb-border', this.border);
-        this.element.style.setProperty('--gb-radius', this.radius);
-        this.element.style.setProperty('--gb-compact-width', this.compactWidth);
+        this.inner.style.setProperty('--gb-height', this.height);
+        this.inner.style.setProperty('--gb-padding', this.padding);
+        this.inner.style.setProperty('--gb-gap', this.gap);
+        this.inner.style.setProperty('--gb-inner-gap', this.innerGap);
+        this.inner.style.setProperty('--gb-bg', this.bg);
+        this.inner.style.setProperty('--gb-border', this.border);
+        this.inner.style.setProperty('--gb-radius', this.radius);
+        this.inner.style.setProperty('--gb-compact-width', this.compactWidth);
     }
 
     _renderItems() {
-        const leftZone = this.element.querySelector('.av-global-bar__left');
-        const centerZone = this.element.querySelector('.av-global-bar__center');
-        const rightZone = this.element.querySelector('.av-global-bar__right');
+        const leftZone = this.inner.querySelector('.av-global-bar__left');
+        const centerZone = this.inner.querySelector('.av-global-bar__center');
+        const rightZone = this.inner.querySelector('.av-global-bar__right');
 
         // Helper per iniettare elementi (Supporta istanze di componenti o nodi DOM nativi)
         const appendItems = (zone, items) => {
@@ -83,13 +83,13 @@ export class AVDashboardGlobalBar {
     setExpanded(isExpanded) {
         this.isExpanded = isExpanded;
         if (isExpanded) {
-            this.element.classList.add('is-expanded');
+            this.inner.classList.add('is-expanded');
         } else {
-            this.element.classList.remove('is-expanded');
+            this.inner.classList.remove('is-expanded');
         }
     }
 
     getNode() {
-        return this.element;
+        return this.container;
     }
 }

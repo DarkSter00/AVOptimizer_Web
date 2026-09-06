@@ -1,4 +1,4 @@
-/* frontend/components/dashboard/AVDashboardGlobalSideMenu/AVDashboardGlobalSideMenu.css */
+/* frontend/components/dashboard/AVSideMenu/AVSideMenu.css */
 
 .av-side-menu-container {
     background: transparent !important; /* Evita sovrapposizioni di grigi */
@@ -14,9 +14,14 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 20px;
-    border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.08));
     flex-shrink: 0;
+
+    /* Variabili configurabili */
+    padding: var(--sm-top-padding, 20px);
+    margin: var(--sm-top-margin, 0);
+    background: var(--sm-top-bg, transparent);
+    border-bottom: var(--sm-top-border, 1px solid var(--border, rgba(255, 255, 255, 0.08)));
+    gap: var(--sm-top-gap, 0px);
 }
 
 .av-side-menu-title {
@@ -29,22 +34,33 @@
 .av-side-menu-body {
     flex: 1;
     overflow-y: auto;
-    padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
     -ms-overflow-style: none;
     scrollbar-width: none;
-}
 
+    /* Variabili configurabili */
+    padding: var(--sm-center-padding, 20px);
+    margin: var(--sm-center-margin, 0);
+    background: var(--sm-center-bg, transparent);
+    border: var(--sm-center-border, none);
+    gap: var(--sm-center-gap, 12px);
+}
 .av-side-menu-body::-webkit-scrollbar {
     display: none;
 }
 
 .av-side-menu-footer {
-    padding: 20px;
-    border-top: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+    display: flex;
+    flex-direction: column; /* Necessario per far funzionare il gap tra gli elementi */
     flex-shrink: 0;
+
+    /* Variabili configurabili */
+    padding: var(--sm-bottom-padding, 20px);
+    margin: var(--sm-bottom-margin, 0);
+    background: var(--sm-bottom-bg, transparent);
+    border-top: var(--sm-bottom-border, 1px solid var(--border, rgba(255, 255, 255, 0.08)));
+    gap: var(--sm-bottom-gap, 12px);
 }
 
 .av-side-menu-item {
