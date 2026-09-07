@@ -15,7 +15,8 @@
 .av-canvas-topbar-zone {
     flex-shrink: 0;
     z-index: 20;
-    margin-bottom: var(--cv-topbar-margin, 0px);
+    /* Usa un padding per staccarsi dai bordi fisici del canvas! */
+    padding: var(--cv-topbar-padding, 20px 30px 10px 30px);
 }
 
 .av-canvas-workspace {

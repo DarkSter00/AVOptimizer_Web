@@ -34,6 +34,7 @@ export class AVCanvas {
         if (this.styles.colGap) this.container.style.setProperty('--cv-col-gap', this.styles.colGap);
         if (this.styles.itemGap) this.container.style.setProperty('--cv-item-gap', this.styles.itemGap);
         if (this.styles.workPadding) this.container.style.setProperty('--cv-work-padding', this.styles.workPadding);
+        if (this.styles.topbarPadding) this.container.style.setProperty('--cv-topbar-padding', this.styles.topbarPadding);
 
         this.container.innerHTML = `
             <div class="av-canvas-container">
@@ -62,7 +63,6 @@ export class AVCanvas {
 
     updateItems(newItems) {
         this.items = newItems;
-
         let mappedItems = this.items.map((item, index) => {
             const priority = this.priorityMap[item.status] !== undefined ? this.priorityMap[item.status] : 0;
             return { originalItem: item, originalIndex: index, priority: priority };
@@ -73,19 +73,33 @@ export class AVCanvas {
             return a.originalIndex - b.originalIndex;
         });
 
-        const cols = [];
-        for (let i = 0; i < this.columnCount; i++) {
-            const colEl = this.container.querySelector(`#${this.containerId}-col-${i}`);
-            // Pulisce fisicamente il DOM della colonna
-            while (colEl.firstChild) { colEl.removeChild(colEl.firstChild); }
-            cols.push(colEl);
-        }
+        // 1. Smista logicamente i nodi previsti per colonna
+        const expectedCols = Array.from({ length: this.columnCount }, () => []);
 
         mappedItems.forEach((mappedObj, i) => {
             const colIndex = i % this.columnCount;
             const node = typeof mappedObj.originalItem.getNode === 'function' ? mappedObj.originalItem.getNode() : mappedObj.originalItem;
-            if (node) cols[colIndex].appendChild(node);
+            if (node) expectedCols[colIndex].push(node);
         });
+
+        // 2. SMART UPDATE: Modifica il DOM solo se la posizione del nodo è cambiata
+        for (let i = 0; i < this.columnCount; i++) {
+            const colEl = this.container.querySelector(`#${this.containerId}-col-${i}`);
+            const expectedNodes = expectedCols[i];
+
+            // Se ci sono nodi in più, li rimuove dal fondo
+            while (colEl.children.length > expectedNodes.length) {
+                colEl.removeChild(colEl.lastChild);
+            }
+
+            // Controlla la posizione di ciascun nodo
+            for (let j = 0; j < expectedNodes.length; j++) {
+                // Se il nodo previsto non è quello attualmente in questa posizione, lo sposta
+                if (colEl.children[j] !== expectedNodes[j]) {
+                    colEl.insertBefore(expectedNodes[j], colEl.children[j] || null);
+                }
+            }
+        }
     }
 
     getTopBar() { return this.upperBarInstance; }

@@ -20,8 +20,13 @@ export class AVFolder {
 
     _createDOM() {
         const el = document.createElement('div');
-        el.className = 'av-folder-card';
+        el.className = 'av-folder-card is-entering';
         if (this.id) el.id = this.id;
+
+        // Autodistruzione della classe dopo l'animazione (800ms)
+        setTimeout(() => {
+            if (el) el.classList.remove('is-entering');
+        }, 800);
 
         // 1. HEADER (Accetta AVButton, AVTitleBox o nodi generici)
         const header = document.createElement('div');

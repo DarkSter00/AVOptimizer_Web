@@ -1,0 +1,45 @@
+/* frontend/components/AVTitleBox/AVTitleBox.css */
+
+.av-title-box {
+    display: flex;
+    align-items: center;
+    gap: var(--tb-gap, 12px);
+    padding: var(--tb-padding, 6px 16px);
+    background: var(--tb-bg, transparent);
+    border: var(--tb-border, none);
+    border-radius: var(--tb-radius, 50px);
+
+    /* Regole fondamentali per impedire che Flexbox lo faccia sparire */
+    min-width: var(--tb-min-width, 150px);
+    max-width: var(--tb-max-width, 100%);
+    width: 100%;
+    transition: all 0.3s ease;
+}
+
+.av-title-box__text {
+    font-size: var(--tb-font-size, 15px);
+    font-weight: 700;
+    color: var(--tb-color, var(--text-main));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 0.5px;
+
+    /* Spinge il badge verso destra e permette il taglio del testo */
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.av-title-box__badge {
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: var(--tb-badge-bg, rgba(255, 255, 255, 0.08));
+    color: var(--tb-badge-color, #aaa);
+    border: 1px solid var(--tb-badge-border, transparent);
+    white-space: nowrap;
+    flex-shrink: 0; /* Impedisce che il badge venga schiacciato */
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}

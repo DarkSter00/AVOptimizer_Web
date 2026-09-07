@@ -16,10 +16,21 @@
     opacity: var(--fld-opacity, 1);
     filter: var(--fld-filter, none);
 
-    /* Transizioni morbide per i cambi di stato */
     transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
     box-shadow 0.6s ease, border-color 0.4s ease, background-color 0.4s ease,
     opacity 0.4s ease, filter 0.4s ease;
+
+    /* Transizioni morbide per i cambi di stato */
+    /*
+    transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.6s ease, border-color 0.4s ease, background-color 0.4s ease,
+    opacity 0.4s ease, filter 0.4s ease;
+    animation: popIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    */
+}
+
+/* AGGIUNTA LA CLASSE TEMPORANEA */
+.av-folder-card.is-entering {
     animation: popIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
